@@ -452,8 +452,11 @@ export function startGame(container, navigate, totalRounds) {
       const selectedIdx = Math.floor(Math.random() * items.length)
       const ITEM_H = 60, REPEATS = 5
       const all = []; for (let r = 0; r < REPEATS; r++) all.push(...items)
-      const targetI = (REPEATS - 2) * items.length + selectedIdx
+      // 向下滚动：目标在列表前部，起点在列表尾部
+      const targetI = 1 * items.length + selectedIdx
       const targetY = targetI * ITEM_H - 130
+      const startI = (REPEATS - 1) * items.length
+      const startY = startI * ITEM_H - 130
 
       const ov = document.createElement('div'); ov.className = 'roller-overlay'
       ov.innerHTML = `
@@ -467,11 +470,14 @@ export function startGame(container, navigate, totalRounds) {
       document.body.appendChild(ov)
       resolveAllImages(ov)
       const track = ov.querySelector('#roller-track')
+      // 初始位置：显示列表尾部（向下滚动的起点）
+      track.style.transform = `translateY(-${startY}px)`
       // 强制浏览器完成初始布局，确保过渡动画可以正常触发
       track.getBoundingClientRect()
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           track.style.transition = 'transform 3s cubic-bezier(0.15,0.85,0.25,1)'
+          // 向下滚动到目标位置（targetY < startY，所以内容向下移动）
           track.style.transform = `translateY(-${targetY}px)`
         })
       })
