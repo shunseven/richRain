@@ -11,6 +11,17 @@ const TOKEN_R = 15
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms))
 
+// === 系统事件定义（每个20%概率，用于系统事件格子） ===
+const _sysIcon = (emoji) => `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text x="50" y="68" text-anchor="middle" font-size="52">${emoji}</text></svg>`)}`
+const SYSTEM_EVENTS = [
+  { id: 'sys_star_move', name: '⭐ 星星换位置', emoji: '⭐', icon: _sysIcon('⭐'), description: '星星随机移动到新位置！', color: '#ffd700' },
+  { id: 'sys_forward_10', name: '🚀 往前走10格', emoji: '🚀', icon: _sysIcon('🚀'), description: '向前冲刺10格！', color: '#00b894' },
+  { id: 'sys_backward_5', name: '🐢 往后走5格', emoji: '🐢', icon: _sysIcon('🐢'), description: '后退5格...', color: '#e74c3c' },
+  { id: 'sys_swap_player', name: '🔄 和随机角色换位置', emoji: '🔄', icon: _sysIcon('🔄'), description: '与一位随机角色互换位置！', color: '#6c5ce7' },
+  { id: 'sys_near_star', name: '🌠 走到星星前两格', emoji: '🌠', icon: _sysIcon('🌠'), description: '瞬移到星星前两格！', color: '#fdcb6e' },
+  { id: 'sys_random_pos', name: '🎲 跳到随机位置', emoji: '🎲', icon: _sysIcon('🎲'), description: '随机传送到棋盘任意位置！', color: '#00cec9' },
+]
+
 // === 棋盘格子位置 ===
 function getTilePositions(sx, sy) {
   const p = []
@@ -24,11 +35,13 @@ function getTilePositions(sx, sy) {
 // === 棋盘格子类型 ===
 const EVENT_TILES = [2, 5, 9, 14, 17, 21]
 const NPC_TILES = [4, 8, 11, 16, 20, 23]
+const SYSTEM_TILES = [3, 10, 15, 22]  // 系统事件格子（每边各一个）
 
 function getTileType(i) {
   if (i === 0) return 'start'
   if (EVENT_TILES.includes(i)) return 'event'
   if (NPC_TILES.includes(i)) return 'npc'
+  if (SYSTEM_TILES.includes(i)) return 'system'
   return 'normal'
 }
 
@@ -54,9 +67,10 @@ export function startGame(container, navigate, totalRounds) {
   // 游戏状态
   const players = characters.map(c => ({ ...c, coins: 5, stars: 0, position: 0 }))
   let currentRound = 1, currentPI = 0, phase = 'waiting_dice'
-  let starPos = 6 // 星星初始位置
-  // 确保星星不在特殊格子上
-  while (getTileType(starPos) !== 'normal') { starPos = Math.floor(Math.random() * BOARD_SIZE) }
+  // 星星初始位置 - 随机放在普通格子上
+  const normalTiles = []
+  for (let i = 0; i < BOARD_SIZE; i++) { if (getTileType(i) === 'normal') normalTiles.push(i) }
+  let starPos = normalTiles[Math.floor(Math.random() * normalTiles.length)]
 
   // ===== DOM 结构 =====
   container.innerHTML = `
@@ -144,13 +158,19 @@ export function startGame(container, navigate, totalRounds) {
       grad1: '#4a1e00', grad2: '#2a0f00', s: '#e67e22', s2: '#f39c12',
       glow: 'rgba(230,126,34,0.22)', glowOuter: 'rgba(230,126,34,0.08)',
       innerGlow: 'rgba(255,180,80,0.07)', highlight: 'rgba(255,220,160,0.15)',
-      icon: '🎁', label: '事件',
+      icon: '❗', label: '事件',
     },
     npc: {
       grad1: '#3a0030', grad2: '#1e0018', s: '#e84393', s2: '#fd79a8',
       glow: 'rgba(232,67,147,0.22)', glowOuter: 'rgba(232,67,147,0.08)',
       innerGlow: 'rgba(255,120,180,0.07)', highlight: 'rgba(255,180,220,0.15)',
-      icon: '🤝', label: 'NPC',
+      icon: '👥', label: 'NPC',
+    },
+    system: {
+      grad1: '#0a1a3a', grad2: '#050e20', s: '#3498db', s2: '#74b9ff',
+      glow: 'rgba(52,152,219,0.25)', glowOuter: 'rgba(52,152,219,0.1)',
+      innerGlow: 'rgba(100,180,255,0.08)', highlight: 'rgba(180,220,255,0.16)',
+      icon: '⚡', label: '系统',
     },
   }
 
@@ -449,7 +469,7 @@ export function startGame(container, navigate, totalRounds) {
           <div class="event-icon"><img src="${event.icon}"/></div>
           <div class="event-name">${event.name}</div>
           <div class="event-effect ${isReward ? 'reward' : 'punishment'}">
-            ${isReward ? '🎁 奖励事件' : '😤 惩罚事件'}
+            ${isReward ? '✨ 奖励事件' : '😤 惩罚事件'}
           </div>
           <div style="color:rgba(255,255,255,0.7);margin-top:10px;font-size:1.1em">${event.description || ''}</div>
           <div class="continue-hint" style="margin-top:20px">按空格键继续</div>
@@ -563,7 +583,7 @@ export function startGame(container, navigate, totalRounds) {
     })
   }
 
-  // ===== 移动角色 =====
+  // ===== 移动角色（前进） =====
   async function movePlayer(pi, steps) {
     const p = players[pi]
     for (let s = 0; s < steps; s++) {
@@ -581,20 +601,122 @@ export function startGame(container, navigate, totalRounds) {
     }
   }
 
-  // ===== 处理落地格子（事件不给金币，仅展示事件内容） =====
+  // ===== 移动角色（后退） =====
+  async function movePlayerBack(pi, steps) {
+    const p = players[pi]
+    for (let s = 0; s < steps; s++) {
+      p.position = (p.position - 1 + BOARD_SIZE) % BOARD_SIZE
+      refreshTokens()
+      updateInfoPanel()
+      await sleep(350)
+    }
+  }
+
+  // ===== 瞬移角色到指定格子 =====
+  async function teleportPlayer(pi, targetPos) {
+    const p = players[pi]
+    p.position = targetPos
+    refreshTokens()
+    updateInfoPanel()
+    updatePlayersPanel()
+    await sleep(500)
+  }
+
+  // ===== 系统事件结果展示 =====
+  function showSystemEventResult(sysEvent, extraInfo = '') {
+    return new Promise(resolve => {
+      const ov = document.createElement('div'); ov.className = 'event-result-overlay'
+      ov.innerHTML = `
+        <div class="event-result">
+          <div style="font-size:80px;margin-bottom:15px">${sysEvent.emoji}</div>
+          <div class="event-name" style="color:${sysEvent.color}">${sysEvent.name}</div>
+          <div style="color:rgba(255,255,255,0.8);font-size:1.2em;margin:15px 0">${sysEvent.description}</div>
+          ${extraInfo ? `<div style="color:${sysEvent.color};font-size:1.1em;margin-bottom:10px">${extraInfo}</div>` : ''}
+          <div class="continue-hint" style="margin-top:20px">按空格键继续</div>
+        </div>`
+      document.body.appendChild(ov)
+      const handler = (e) => {
+        if (e.code === 'Space') { document.removeEventListener('keydown', handler); ov.remove(); resolve() }
+      }
+      document.addEventListener('keydown', handler)
+    })
+  }
+
+  // ===== 执行系统事件 =====
+  async function executeSystemEvent(pi, sysEvent) {
+    const p = players[pi]
+
+    switch (sysEvent.id) {
+      case 'sys_star_move': {
+        await showSystemEventResult(sysEvent, '星星飞走了...')
+        moveStar()
+        break
+      }
+      case 'sys_forward_10': {
+        await showSystemEventResult(sysEvent, `${p.name} 向前冲刺10格！`)
+        await movePlayer(pi, 10)
+        break
+      }
+      case 'sys_backward_5': {
+        await showSystemEventResult(sysEvent, `${p.name} 被迫后退5格...`)
+        await movePlayerBack(pi, 5)
+        break
+      }
+      case 'sys_swap_player': {
+        const others = players.filter((_, i) => i !== pi)
+        if (others.length === 0) {
+          await showSystemEventResult(sysEvent, '没有其他角色可以交换！')
+          break
+        }
+        const target = others[Math.floor(Math.random() * others.length)]
+        const targetIdx = players.indexOf(target)
+        const tmpPos = p.position
+        await showSystemEventResult(sysEvent, `${p.name} 和 ${target.name} 互换位置！`)
+        p.position = target.position
+        target.position = tmpPos
+        refreshTokens()
+        updateInfoPanel()
+        updatePlayersPanel()
+        await sleep(500)
+        break
+      }
+      case 'sys_near_star': {
+        const targetPos = (starPos - 2 + BOARD_SIZE) % BOARD_SIZE
+        await showSystemEventResult(sysEvent, `${p.name} 瞬移到星星前两格！`)
+        await teleportPlayer(pi, targetPos)
+        break
+      }
+      case 'sys_random_pos': {
+        const randomPos = Math.floor(Math.random() * BOARD_SIZE)
+        await showSystemEventResult(sysEvent, `${p.name} 被传送到了第 ${randomPos} 格！`)
+        await teleportPlayer(pi, randomPos)
+        break
+      }
+    }
+  }
+
+  // ===== 处理落地格子 =====
   async function handleTileLanding(pi) {
     const p = players[pi]
     const type = getTileType(p.position)
     if (type === 'event' && events.length > 0) {
+      // 随机事件格子 → 仅从用户自定义事件中抽取
       setHint('随机事件触发！')
-      const ev = await showRoller('🎁 随机事件抽取中...', events, 6)
+      const ev = await showRoller('❗ 随机事件抽取中...', events, Math.min(6, events.length))
       if (ev) {
         await showEventResult(ev)
+      }
+    } else if (type === 'system') {
+      // 系统事件格子 → 从5个系统事件中抽取
+      setHint('⚡ 系统事件触发！')
+      const ev = await showRoller('⚡ 系统事件抽取中...', SYSTEM_EVENTS, SYSTEM_EVENTS.length)
+      if (ev) {
+        await executeSystemEvent(pi, ev)
       }
     } else if (type === 'npc' && npcEvents.length > 0) {
       const npcs = store.getNpcs()
       const randomNpc = npcs.length > 0 ? npcs[Math.floor(Math.random() * npcs.length)] : null
-      const title = randomNpc ? `🤝 与${randomNpc.name}互动中...` : '🤝 NPC事件抽取中...'
+      const title = randomNpc ? `👥 与${randomNpc.name}互动中...` : '👥 NPC事件抽取中...'
       setHint('NPC事件触发！')
       const ev = await showRoller(title, npcEvents, 6)
       if (ev) {

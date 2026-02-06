@@ -54,11 +54,11 @@ function showMenu() {
           小游戏编辑
         </button>
         <button class="menu-btn" data-action="event-editor">
-          <span class="menu-btn-icon">🎁</span>
+          <span class="menu-btn-icon">❗</span>
           随机事件编辑
         </button>
         <button class="menu-btn" data-action="npc-event-editor">
-          <span class="menu-btn-icon">🤝</span>
+          <span class="menu-btn-icon">👥</span>
           NPC事件编辑
         </button>
         <button class="menu-btn" data-action="prize-editor">

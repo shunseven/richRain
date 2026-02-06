@@ -359,7 +359,7 @@ export function showMiniGameEditor(container, navigate) {
 
 // ===== 随机事件编辑器 =====
 export function showEventEditor(container, navigate) {
-  const { grid, addBtn } = createEditorLayout(container, '🎁 随机事件编辑', navigate)
+  const { grid, addBtn } = createEditorLayout(container, '❗ 随机事件编辑', navigate)
 
   function render() {
     const events = store.getEvents()
@@ -425,7 +425,7 @@ export function showEventEditor(container, navigate) {
 
 // ===== NPC事件编辑器 =====
 export function showNpcEventEditor(container, navigate) {
-  const { grid, addBtn } = createEditorLayout(container, '🤝 NPC事件编辑', navigate)
+  const { grid, addBtn } = createEditorLayout(container, '👥 NPC事件编辑', navigate)
 
   function render() {
     const events = store.getNpcEvents()
