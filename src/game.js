@@ -642,15 +642,22 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
   function setHint(text) { document.getElementById('game-hint').textContent = text }
 
   // ===== 3D 骰子动画 =====
-  function rollDice() {
+  function rollDice(player) {
     if (diceMode === 'external') {
-      return rollDiceExternal()
+      return rollDiceExternal(player)
     }
     return new Promise(resolve => {
       const result = Math.floor(Math.random() * 6) + 1
       const ov = document.createElement('div'); ov.className = 'dice-overlay'
-      ov.innerHTML = dice3DHTML()
+      const charHTML = player ? `
+        <div class="dice-character-info">
+          <div class="dice-char-avatar"><img src="${player.avatar}"/></div>
+          <div class="dice-char-name" style="color:${player.color}">${player.name}</div>
+          <div class="dice-char-label">🎲 摇骰子中...</div>
+        </div>` : ''
+      ov.innerHTML = `<div class="dice-with-character">${charHTML}${dice3DHTML()}</div>`
       document.body.appendChild(ov)
+      if (player) resolveAllImages(ov)
       playDiceRoll()  // 🔊 骰子摇动音效
 
       const cube = ov.querySelector('#dice-cube')
@@ -677,11 +684,20 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
   }
 
   // ===== 场外骰子模式（3D版） =====
-  function rollDiceExternal() {
+  function rollDiceExternal(player) {
     return new Promise(resolve => {
       const ov = document.createElement('div'); ov.className = 'dice-overlay'
+      const charHTML = player ? `
+        <div class="dice-character-info">
+          <div class="dice-char-avatar"><img src="${player.avatar}"/></div>
+          <div class="dice-char-name" style="color:${player.color}">${player.name}</div>
+          <div class="dice-char-label">🎯 等待输入点数...</div>
+        </div>` : ''
       ov.innerHTML = `
-        ${dice3DHTML()}
+        <div class="dice-with-character">
+          ${charHTML}
+          ${dice3DHTML()}
+        </div>
         <div class="dice-input-area">
           <div class="dice-input-hint">🎯 请输入场外骰子点数</div>
           <div class="dice-number-buttons" id="dice-buttons">
@@ -689,6 +705,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
           </div>
         </div>`
       document.body.appendChild(ov)
+      if (player) resolveAllImages(ov)
 
       const cube = ov.querySelector('#dice-cube')
       const scene = ov.querySelector('#dice-scene')
@@ -748,7 +765,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
   }
 
   // ===== 事件/NPC滚动器 =====
-  function showRoller(title, pool, count = 6) {
+  function showRoller(title, pool, count = 6, characterInfo = null) {
     return new Promise(resolve => {
       if (pool.length === 0) { resolve(null); return }
       playRollerSpin()  // 🔊 滚动器旋转音效
@@ -766,15 +783,25 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
       const startI = (REPEATS - 1) * items.length
       const startY = startI * ITEM_H - 130
 
-      const ov = document.createElement('div'); ov.className = 'roller-overlay'
-      ov.innerHTML = `
-        <div class="roller-title">${title}</div>
+      const charHTML = characterInfo ? `
+        <div class="roller-character-info">
+          <div class="roller-char-avatar"><img src="${characterInfo.avatar}"/></div>
+          <div class="roller-char-name">${characterInfo.name}</div>
+        </div>` : ''
+
+      const rollerContainerHTML = `
         <div class="roller-container">
           <div class="roller-highlight"></div>
           <div class="roller-items" id="roller-track">
             ${all.map(it => `<div class="roller-item"><img src="${it.icon}"/><span class="item-label">${it.name}</span></div>`).join('')}
           </div>
         </div>`
+
+      const ov = document.createElement('div'); ov.className = 'roller-overlay'
+      ov.innerHTML = characterInfo
+        ? `<div class="roller-title">${title}</div>
+           <div class="roller-with-character">${charHTML}${rollerContainerHTML}</div>`
+        : `<div class="roller-title">${title}</div>${rollerContainerHTML}`
       document.body.appendChild(ov)
       resolveAllImages(ov)
       const track = ov.querySelector('#roller-track')
@@ -1097,7 +1124,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
       const title = randomNpc ? `👥 与${randomNpc.name}互动中...` : '👥 NPC事件抽取中...'
       setHint('NPC事件触发！')
       playNpcEncounter()  // 🔊 NPC遭遇音效
-      const ev = await showRoller(title, npcEvents, 6)
+      const ev = await showRoller(title, npcEvents, 6, randomNpc)
       if (ev) {
         await showEventResult(ev)
       }
@@ -1162,7 +1189,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
       phase = 'rolling'
       playClick()  // 🔊 按键音效
       setHint('摇骰子中...')
-      const dice = await rollDice()
+      const dice = await rollDice(players[currentPI])
       setHint(`${players[currentPI].name} 摇到了 ${dice}！移动中...`)
       await sleep(300)
 

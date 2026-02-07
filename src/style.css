@@ -958,6 +958,56 @@ body {
   backdrop-filter: blur(4px);
 }
 
+/* 骰子旁边的角色信息 */
+.dice-with-character {
+  display: flex;
+  align-items: center;
+  gap: 50px;
+}
+
+.dice-character-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  animation: popIn 0.5s ease;
+}
+
+.dice-char-avatar {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 3px solid #ffd700;
+  overflow: hidden;
+  background: radial-gradient(circle, rgba(139,0,0,0.6), rgba(40,0,0,0.8));
+  box-shadow: 0 0 25px rgba(255,215,0,0.4), 0 4px 15px rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dice-char-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.dice-char-name {
+  font-size: 1.4em;
+  font-weight: bold;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+  letter-spacing: 2px;
+}
+
+.dice-char-label {
+  font-size: 0.85em;
+  color: rgba(255,215,0,0.7);
+  font-weight: bold;
+  animation: hintPulse 2s ease-in-out infinite;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+
 /* 3D 骰子场景 */
 .dice-scene {
   width: 140px;
@@ -1048,6 +1098,49 @@ body {
   width: 110px;
   height: 20px;
   opacity: 0.7;
+}
+
+/* 滚动器旁边的角色/NPC信息 */
+.roller-with-character {
+  display: flex;
+  align-items: center;
+  gap: 35px;
+}
+
+.roller-character-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  animation: popIn 0.5s ease;
+}
+
+.roller-char-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid #e84393;
+  overflow: hidden;
+  background: radial-gradient(circle, #3a0030, #2a0020);
+  box-shadow: 0 0 20px rgba(232,67,147,0.45), 0 4px 15px rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.roller-char-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.roller-char-name {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #ffd700;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  letter-spacing: 1px;
 }
 
 /* 事件滚动器 - 喜庆风格 */
