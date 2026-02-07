@@ -349,7 +349,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
   // ① 外层大光晕（x,y 为左上角）
   const starGlowOuter = new Ellipse({
     x: starCX() - STAR_SIZE * 0.75,
-    y: starCY() - STAR_SIZE * 0.75,
+    y: starCY() - STAR_SIZE * 0.75 - 20,
     width: STAR_SIZE * 1.5, height: STAR_SIZE * 1.5,
     fill: { type: 'radial', stops: [
       { offset: 0, color: 'rgba(255,215,0,0.35)' },
@@ -363,7 +363,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
   // ② 内层光圈
   const starGlowInner = new Ellipse({
     x: starCX() - STAR_SIZE * 0.5,
-    y: starCY() - STAR_SIZE * 0.5,
+    y: starCY() - STAR_SIZE * 0.5 - 20,
     width: STAR_SIZE, height: STAR_SIZE,
     fill: { type: 'radial', stops: [
       { offset: 0, color: 'rgba(255,235,100,0.45)' },
@@ -435,14 +435,14 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
     const outerScale = 1 + pulse * 0.15
     const outerHalf = STAR_SIZE * 0.75
     starGlowOuter.x = cx - outerHalf * outerScale
-    starGlowOuter.y = cy - outerHalf * outerScale
+    starGlowOuter.y = cy - outerHalf * outerScale - 20
     starGlowOuter.width = STAR_SIZE * 1.5 * outerScale
     starGlowOuter.height = STAR_SIZE * 1.5 * outerScale
 
     const innerScale = 1 + pulse * 0.08
     const innerHalf = STAR_SIZE * 0.5
     starGlowInner.x = cx - innerHalf * innerScale
-    starGlowInner.y = cy - innerHalf * innerScale
+    starGlowInner.y = cy - innerHalf * innerScale - 20
     starGlowInner.width = STAR_SIZE * innerScale
     starGlowInner.height = STAR_SIZE * innerScale
 
@@ -457,7 +457,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
       const rx = SPARKLE_ORBIT + Math.sin(starAnimT * 1.5 + i) * 4
       const ry = SPARKLE_ORBIT * 0.7 + Math.cos(starAnimT * 1.2 + i) * 3
       sparkles[i].x = cx + Math.cos(angle) * rx - 2.5
-      sparkles[i].y = cy + Math.sin(angle) * ry - 2.5
+      sparkles[i].y = cy - 20 + Math.sin(angle) * ry - 2.5
       sparkles[i].opacity = 0.4 + Math.sin(starAnimT * 3 + i * 1.5) * 0.4
       const sz = 3 + Math.sin(starAnimT * 2 + i) * 2
       sparkles[i].width = sz
@@ -476,7 +476,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
       const progress = tw.phase / (Math.PI * 2)
       const curR = tw.radius + progress * 35
       tw.el.x = cx + Math.cos(tw.angle + progress * 0.5) * curR - 5
-      tw.el.y = cy + Math.sin(tw.angle + progress * 0.5) * curR - 5 + floatY * 0.3
+      tw.el.y = cy - 20 + Math.sin(tw.angle + progress * 0.5) * curR - 5 + floatY * 0.3
       tw.el.opacity = progress < 0.2 ? progress / 0.2 * 0.8 : (1 - progress) * 0.8
       tw.el.rotation = progress * 180
       const pScale = progress < 0.3 ? 1 : 1 - (progress - 0.3) * 0.7
@@ -489,9 +489,9 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
     starBaseX = pos.x; starBaseY = pos.y
     const cx = starCX(), cy = starCY()
     starGlowOuter.x = cx - STAR_SIZE * 0.75
-    starGlowOuter.y = cy - STAR_SIZE * 0.75
+    starGlowOuter.y = cy - STAR_SIZE * 0.75 - 20
     starGlowInner.x = cx - STAR_SIZE * 0.5
-    starGlowInner.y = cy - STAR_SIZE * 0.5
+    starGlowInner.y = cy - STAR_SIZE * 0.5 - 20
     starText.x = pos.x; starText.y = cy - STAR_FONT / 2 - 30
     starLabel.x = pos.x; starLabel.y = cy + STAR_FONT / 2 - 8
   }
