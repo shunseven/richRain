@@ -2,6 +2,14 @@
 import { Leafer, Rect, Text, Ellipse } from 'leafer-ui'
 import { store, SYSTEM_ICONS } from './store.js'
 import { resolveAllImages } from './imageDB.js'
+import {
+  initAudio, startBGM, stopBGM,
+  playDiceRoll, playDiceResult, playStep, playCoinGain, playCoinLoss,
+  playStarCollect, playEventTrigger, playSystemEvent, playNpcEncounter,
+  playMiniGameStart, playVictory, playGameOver,
+  playForwardBoost, playBackwardSlow, playSwap, playTeleport,
+  playRollerSpin, playRollerStop, playClick
+} from './sound.js'
 
 // === 常量 ===
 const BOARD_SIZE = 24
@@ -438,6 +446,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
       const ov = document.createElement('div'); ov.className = 'dice-overlay'
       ov.innerHTML = `<div class="dice-display" id="dice-num">1</div>`
       document.body.appendChild(ov)
+      playDiceRoll()  // 🔊 骰子摇动音效
       const dn = ov.querySelector('#dice-num')
       let count = 0
       const iv = setInterval(() => {
@@ -446,6 +455,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
         if (count >= 22) {
           clearInterval(iv)
           dn.textContent = result; dn.classList.add('settled')
+          playDiceResult()  // 🔊 骰子结果音效
           setTimeout(() => { ov.remove(); resolve(result) }, 900)
         }
       }, 90)
@@ -480,6 +490,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
           dn.textContent = num
           dn.classList.remove('dice-rolling')
           dn.classList.add('settled')
+          playDiceResult()  // 🔊 骰子结果音效
           // 隐藏输入区域
           const inputArea = ov.querySelector('.dice-input-area')
           if (inputArea) inputArea.style.display = 'none'
@@ -509,6 +520,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
   function showRoller(title, pool, count = 6) {
     return new Promise(resolve => {
       if (pool.length === 0) { resolve(null); return }
+      playRollerSpin()  // 🔊 滚动器旋转音效
       const items = []; const used = new Set()
       while (items.length < Math.min(count, pool.length)) {
         const idx = Math.floor(Math.random() * pool.length)
@@ -546,7 +558,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
           track.style.transform = `translateY(-${targetY}px)`
         })
       })
-      setTimeout(() => { setTimeout(() => { ov.remove(); resolve(items[selectedIdx]) }, 1200) }, 3100)
+      setTimeout(() => { playRollerStop(); setTimeout(() => { ov.remove(); resolve(items[selectedIdx]) }, 1200) }, 3100)  // 🔊 滚动器停止音效
     })
   }
 
@@ -577,6 +589,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
   // ===== 星星弹窗 =====
   function showStarPopup(player) {
     return new Promise(resolve => {
+      playStarCollect()  // 🔊 获得星星音效
       const ov = document.createElement('div'); ov.className = 'star-popup'
       ov.innerHTML = `<div class="star-icon">⭐</div><div class="star-text">${player.name} 获得一颗星！<br/><span style="font-size:0.8em;color:#aaa">-10 金币</span></div>`
       document.body.appendChild(ov)
@@ -588,6 +601,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
   function showCoinPopup(player, amount) {
     return new Promise(resolve => {
       const isGain = amount >= 0
+      if (isGain) playCoinGain(); else playCoinLoss()  // 🔊 金币获得/失去音效
       const ov = document.createElement('div'); ov.className = 'star-popup'
       ov.innerHTML = `
         <div class="star-icon" style="font-size:60px">${isGain ? '💰' : '💸'}</div>
@@ -662,6 +676,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
       ov.querySelectorAll('.rank-player').forEach(el => {
         el.addEventListener('click', () => {
           const winnerIdx = parseInt(el.dataset.idx)
+          playVictory()  // 🔊 胜利音效
           // 胜者 +5 金币
           players[winnerIdx].coins += 5
           // 其余玩家 +2 金币
@@ -700,6 +715,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
       p.position = (p.position + 1) % BOARD_SIZE
       refreshTokens()
       updateInfoPanel()
+      playStep()  // 🔊 移动一步音效
       await sleep(350)
       // 检查星星
       if (p.position === starPos && p.coins >= 10) {
@@ -718,6 +734,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
       p.position = (p.position - 1 + BOARD_SIZE) % BOARD_SIZE
       refreshTokens()
       updateInfoPanel()
+      playStep()  // 🔊 移动一步音效
       await sleep(350)
     }
   }
@@ -764,11 +781,13 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
       }
       case 'sys_forward_10': {
         await showSystemEventResult(sysEvent, `${p.name} 向前冲刺10格！`)
+        playForwardBoost()  // 🔊 前进加速音效
         await movePlayer(pi, 10)
         break
       }
       case 'sys_backward_5': {
         await showSystemEventResult(sysEvent, `${p.name} 被迫后退5格...`)
+        playBackwardSlow()  // 🔊 后退减速音效
         await movePlayerBack(pi, 5)
         break
       }
@@ -782,6 +801,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
         const targetIdx = players.indexOf(target)
         const tmpPos = p.position
         await showSystemEventResult(sysEvent, `${p.name} 和 ${target.name} 互换位置！`)
+        playSwap()  // 🔊 交换位置音效
         p.position = target.position
         target.position = tmpPos
         refreshTokens()
@@ -793,12 +813,14 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
       case 'sys_near_star': {
         const targetPos = (starPos - 2 + BOARD_SIZE) % BOARD_SIZE
         await showSystemEventResult(sysEvent, `${p.name} 瞬移到星星前两格！`)
+        playTeleport()  // 🔊 传送音效
         await teleportPlayer(pi, targetPos)
         break
       }
       case 'sys_random_pos': {
         const randomPos = Math.floor(Math.random() * BOARD_SIZE)
         await showSystemEventResult(sysEvent, `${p.name} 被传送到了第 ${randomPos} 格！`)
+        playTeleport()  // 🔊 传送音效
         await teleportPlayer(pi, randomPos)
         break
       }
@@ -812,6 +834,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
     if (type === 'event' && events.length > 0) {
       // 随机事件格子 → 仅从用户自定义事件中抽取
       setHint('随机事件触发！')
+      playEventTrigger()  // 🔊 事件触发音效
       const ev = await showRoller('❗ 随机事件抽取中...', events, Math.min(6, events.length))
       if (ev) {
         await showEventResult(ev)
@@ -819,6 +842,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
     } else if (type === 'system') {
       // 系统事件格子 → 从5个系统事件中抽取
       setHint('⚡ 系统事件触发！')
+      playSystemEvent()  // 🔊 系统事件音效
       const ev = await showRoller('⚡ 系统事件抽取中...', SYSTEM_EVENTS, SYSTEM_EVENTS.length)
       if (ev) {
         await executeSystemEvent(pi, ev)
@@ -839,6 +863,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
       const randomNpc = npcs.length > 0 ? npcs[Math.floor(Math.random() * npcs.length)] : null
       const title = randomNpc ? `👥 与${randomNpc.name}互动中...` : '👥 NPC事件抽取中...'
       setHint('NPC事件触发！')
+      playNpcEncounter()  // 🔊 NPC遭遇音效
       const ev = await showRoller(title, npcEvents, 6)
       if (ev) {
         await showEventResult(ev)
@@ -849,6 +874,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
   // ===== 小游戏阶段 =====
   async function miniGamePhase() {
     setHint('🎮 小游戏时间！')
+    playMiniGameStart()  // 🔊 小游戏开始音效
     await sleep(800)
     const { selected, games } = selectMiniGame()
     const { items, selectedIndex } = buildMiniGameRoller(games, selected)
@@ -900,6 +926,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
   async function onKeyDown(e) {
     if (phase === 'waiting_dice' && e.code === 'Enter') {
       phase = 'rolling'
+      playClick()  // 🔊 按键音效
       setHint('摇骰子中...')
       const dice = await rollDice()
       setHint(`${players[currentPI].name} 摇到了 ${dice}！移动中...`)
@@ -925,6 +952,8 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
         currentRound++
         if (currentRound > totalRounds) {
           phase = 'gameover'
+          stopBGM()  // 🔊 停止背景音乐
+          playGameOver()  // 🔊 游戏结束音效
           await sleep(500)
           // 清理键盘事件
           document.removeEventListener('keydown', onKeyDown)
@@ -941,6 +970,10 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
   }
 
   document.addEventListener('keydown', onKeyDown)
+
+  // 初始化音频并启动背景音乐
+  initAudio()
+  startBGM()
 
   // 启动游戏
   gameLoop()
