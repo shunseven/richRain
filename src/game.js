@@ -5,8 +5,9 @@ import { resolveAllImages } from './imageDB.js'
 import {
   initAudio, startBGM, stopBGM,
   playDiceRoll, playDiceResult, playStep, playCoinGain, playCoinLoss,
-  playStarCollect, playEventTrigger, playSystemEvent, playNpcEncounter,
-  playMiniGameStart, playVictory, playGameOver,
+  playStarCollect, playEventTrigger, playRewardEvent, playPunishmentEvent,
+  playSystemEvent, playNpcEncounter,
+  playMiniGameStart, playMiniGameReveal, playVictory, playGameOver,
   playForwardBoost, playBackwardSlow, playSwap, playTeleport,
   playRollerSpin, playRollerStop, playClick
 } from './sound.js'
@@ -566,6 +567,8 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
   function showEventResult(event) {
     return new Promise(resolve => {
       const isReward = event.type === 'reward'
+      // 🔊 根据事件类型播放不同音效
+      if (isReward) playRewardEvent(); else playPunishmentEvent()
       const ov = document.createElement('div'); ov.className = 'event-result-overlay'
       ov.innerHTML = `
         <div class="event-result">
@@ -911,6 +914,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
     }
 
     // 展示选中的游戏并排名
+    playMiniGameReveal()  // 🔊 小游戏揭晓音效
     await showMiniGameResult(selected)
     updateInfoPanel(); updatePlayersPanel()
   }
