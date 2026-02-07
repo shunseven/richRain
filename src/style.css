@@ -493,102 +493,137 @@ body {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background: radial-gradient(ellipse at center, #3a0a0a 0%, #1a0505 70%);
+  background: url('/start-bg.png') center/cover no-repeat;
+}
+
+.round-setup-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 60px;
+  background: rgba(30, 5, 5, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 24px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4), inset 0 0 20px rgba(139, 0, 0, 0.2);
 }
 
 .round-setup h2 {
   color: #ffd700;
-  font-size: 2em;
+  font-size: 2.2em;
   margin-bottom: 30px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+  font-weight: 800;
 }
 
 .round-setup input {
-  width: 120px;
+  width: 140px;
   padding: 15px;
-  font-size: 2em;
+  font-size: 2.2em;
   text-align: center;
-  background: rgba(255,255,255,0.1);
-  border: 2px solid rgba(255,215,0,0.5);
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255,215,0,0.6);
   border-radius: 15px;
   color: #ffd700;
   outline: none;
   font-family: inherit;
+  font-weight: bold;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .round-setup input:focus {
   border-color: #ffd700;
-  box-shadow: 0 0 20px rgba(255,215,0,0.2);
+  box-shadow: 0 0 20px rgba(255,215,0,0.3), inset 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .round-setup .btn-start {
-  margin-top: 30px;
-  padding: 15px 50px;
-  background: linear-gradient(135deg, #c0392b, #8b0000);
-  border: 2px solid rgba(255,215,0,0.5);
-  border-radius: 15px;
-  color: #ffd700;
-  font-size: 1.3em;
-  font-weight: bold;
+  margin-top: 35px;
+  padding: 18px 60px;
+  background: linear-gradient(135deg, #f1c40f, #f39c12);
+  border: none;
+  border-radius: 50px;
+  color: #8b0000;
+  font-size: 1.4em;
+  font-weight: 900;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.3s;
-  letter-spacing: 3px;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  letter-spacing: 2px;
+  box-shadow: 0 6px 20px rgba(241, 196, 15, 0.3);
+  text-shadow: none;
 }
 
 .round-setup .btn-start:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 30px rgba(255,215,0,0.3), 0 0 20px rgba(192,57,43,0.3);
-  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 30px rgba(241, 196, 15, 0.5);
+  background: linear-gradient(135deg, #f39c12, #e67e22);
 }
 
 /* ===== 骰子模式选择器 ===== */
 .dice-mode-selector {
-  margin-top: 25px;
+  margin-top: 30px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 15px;
+  width: 100%;
 }
 
 .dice-mode-label {
-  color: #ffd700;
-  font-size: 1.2em;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.1em;
   font-weight: bold;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  letter-spacing: 1px;
 }
 
 .dice-mode-options {
   display: flex;
-  gap: 15px;
+  gap: 20px;
 }
 
 .dice-mode-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 15px 25px;
-  background: rgba(255,255,255,0.05);
-  border: 2px solid rgba(255,215,0,0.2);
-  border-radius: 15px;
+  gap: 8px;
+  padding: 18px 25px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
   color: rgba(255,255,255,0.6);
   cursor: pointer;
   font-family: inherit;
   transition: all 0.3s;
-  min-width: 140px;
+  min-width: 150px;
 }
 
 .dice-mode-btn:hover {
   background: rgba(255,255,255,0.1);
-  border-color: rgba(255,215,0,0.4);
+  border-color: rgba(255,255,255,0.3);
+  transform: translateY(-2px);
 }
 
 .dice-mode-btn.active {
-  background: rgba(255,215,0,0.12);
-  border-color: #ffd700;
+  background: rgba(255, 215, 0, 0.15);
+  border: 2px solid #ffd700;
   color: #ffd700;
-  box-shadow: 0 0 20px rgba(255,215,0,0.15);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.15);
+}
+
+.dice-mode-btn .mode-icon {
+  font-size: 2em;
+  margin-bottom: 5px;
+}
+
+.dice-mode-btn .mode-text {
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+.dice-mode-btn .mode-desc {
+  font-size: 0.8em;
+  opacity: 0.7;
 }
 
 .dice-mode-btn .mode-icon {
@@ -1513,7 +1548,7 @@ body {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background: radial-gradient(ellipse at center, #3a0a0a 0%, #1a0505 70%);
+  background: url('/ed-bg.png') center/cover no-repeat;
   position: relative;
 }
 
@@ -1535,17 +1570,18 @@ body {
   display: flex;
   align-items: center;
   gap: 20px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(40, 10, 10, 0.75);
+  border: 1px solid rgba(255,215,0,0.2);
   border-radius: 15px;
   padding: 20px;
   transition: all 0.3s;
+  backdrop-filter: blur(5px);
 }
 
 .result-item:first-child {
   border-color: #ffd700;
-  background: linear-gradient(135deg, rgba(255,215,0,0.12), rgba(139,0,0,0.2));
-  box-shadow: 0 4px 20px rgba(255,215,0,0.15);
+  background: linear-gradient(135deg, rgba(180, 50, 0, 0.8), rgba(100, 0, 0, 0.85));
+  box-shadow: 0 4px 20px rgba(255,215,0,0.25);
 }
 
 .result-item .rank-num {
@@ -1589,7 +1625,7 @@ body {
 
 .result-item .result-stats {
   font-size: 0.9em;
-  color: rgba(255,255,255,0.6);
+  color: rgba(255,255,255,0.85);
 }
 
 .result-item .result-prize {
@@ -1626,7 +1662,7 @@ body {
   max-width: 600px;
   margin: -8px auto 8px;
   padding: 8px 16px 10px;
-  background: linear-gradient(135deg, rgba(30,5,5,0.6), rgba(50,10,10,0.5));
+  background: linear-gradient(135deg, rgba(30,5,5,0.85), rgba(50,10,10,0.8));
   border: 1px solid rgba(255,215,0,0.1);
   border-radius: 0 0 12px 12px;
   border-top: none;
