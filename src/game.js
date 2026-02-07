@@ -745,9 +745,9 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
           resolve()
         }
       }, 5000)
-      // 也支持按空格键提前关闭
+      // 也支持按 Enter 键提前关闭
       const handler = (e) => {
-        if (e.code === 'Space') {
+        if (e.code === 'Enter') {
           document.removeEventListener('keydown', handler)
           if (ov.parentNode) {
             ov.remove()
@@ -1065,12 +1065,12 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
             ${typeLabel}
           </div>
           <div style="color:rgba(255,255,255,0.7);margin-top:10px;font-size:1.1em">${event.description || ''}</div>
-          <div class="continue-hint" style="margin-top:20px">按空格键继续</div>
+          <div class="continue-hint" style="margin-top:20px">按 Enter 键继续</div>
         </div>`
       document.body.appendChild(ov)
       resolveAllImages(ov)
       const handler = (e) => {
-        if (e.code === 'Space') { document.removeEventListener('keydown', handler); ov.remove(); resolve() }
+        if (e.code === 'Enter') { document.removeEventListener('keydown', handler); ov.remove(); resolve() }
       }
       document.addEventListener('keydown', handler)
     })
@@ -1158,8 +1158,8 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
                 <div class="rank-badge" id="badge-${i}"></div>
               </div>`).join('')}
           </div>
-          <button class="btn-confirm-winner" id="btn-confirm-winner" style="margin-top:20px;padding:10px 20px;font-size:1.2em;border-radius:5px;border:none;background:#f1c40f;color:#c0392b;font-weight:bold;cursor:pointer;">确认胜利者</button>
-          <div class="rank-instruction" id="rank-inst" style="margin-top:10px;display:none;">按空格键继续</div>
+          <button class="btn-confirm-winner" id="btn-confirm-winner" style="margin-top:20px;padding:10px 20px;font-size:1.2em;border-radius:5px;border:none;background:#f1c40f;color:#c0392b;font-weight:bold;cursor:pointer;">确认胜利者 (Enter)</button>
+          <div class="rank-instruction" id="rank-inst" style="margin-top:10px;display:none;">按 Enter 键继续</div>
         </div>`
       document.body.appendChild(ov)
       resolveAllImages(ov)
@@ -1168,28 +1168,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
       const btnConfirm = ov.querySelector('#btn-confirm-winner')
       const rankInst = ov.querySelector('#rank-inst')
 
-      ov.querySelectorAll('.rank-player').forEach(el => {
-        el.addEventListener('click', () => {
-          if (btnConfirm.style.display === 'none') return // Already confirmed
-
-          const idx = parseInt(el.dataset.idx)
-          if (selectedWinners.has(idx)) {
-            selectedWinners.delete(idx)
-            el.classList.remove('selected-winner')
-            el.style.border = '2px solid transparent'
-          } else {
-            if (selectedWinners.size >= 3) {
-              alert('最多选择3位胜利者！')
-              return
-            }
-            selectedWinners.add(idx)
-            el.classList.add('selected-winner')
-            el.style.border = '2px solid #f1c40f'
-          }
-        })
-      })
-
-      btnConfirm.addEventListener('click', () => {
+      const confirmWinner = () => {
         if (selectedWinners.size === 0) {
           alert('请至少选择一位胜利者！')
           return
@@ -1198,7 +1177,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
         playVictory()  // 🔊 胜利音效
         btnConfirm.style.display = 'none'
         rankInst.style.display = 'block'
-        rankInst.textContent = '选择完成！按空格键继续'
+        rankInst.textContent = '选择完成！按 Enter 键继续'
 
         // 结算规则
         // 1人胜: 胜者+5, 其余+2
@@ -1231,10 +1210,42 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
         })
 
         const handler = (e) => {
-          if (e.code === 'Space') { document.removeEventListener('keydown', handler); ov.remove(); resolve() }
+          if (e.code === 'Enter') { document.removeEventListener('keydown', handler); ov.remove(); resolve() }
         }
         document.addEventListener('keydown', handler)
+      }
+
+      ov.querySelectorAll('.rank-player').forEach(el => {
+        el.addEventListener('click', () => {
+          if (btnConfirm.style.display === 'none') return // Already confirmed
+
+          const idx = parseInt(el.dataset.idx)
+          if (selectedWinners.has(idx)) {
+            selectedWinners.delete(idx)
+            el.classList.remove('selected-winner')
+            el.style.border = '2px solid transparent'
+          } else {
+            if (selectedWinners.size >= 3) {
+              alert('最多选择3位胜利者！')
+              return
+            }
+            selectedWinners.add(idx)
+            el.classList.add('selected-winner')
+            el.style.border = '2px solid #f1c40f'
+          }
+        })
       })
+
+      btnConfirm.addEventListener('click', confirmWinner)
+      
+      // 支持 Enter 键确认胜利者
+      const enterConfirmHandler = (e) => {
+        if (e.code === 'Enter' && btnConfirm.style.display !== 'none') {
+           document.removeEventListener('keydown', enterConfirmHandler)
+           confirmWinner()
+        }
+      }
+      document.addEventListener('keydown', enterConfirmHandler)
     })
   }
 
@@ -1303,11 +1314,11 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
           <div class="event-name" style="color:${sysEvent.color}">${sysEvent.name}</div>
           <div style="color:rgba(255,255,255,0.8);font-size:1.2em;margin:15px 0">${sysEvent.description}</div>
           ${extraInfo ? `<div style="color:${sysEvent.color};font-size:1.1em;margin-bottom:10px">${extraInfo}</div>` : ''}
-          <div class="continue-hint" style="margin-top:20px">按空格键继续</div>
+          <div class="continue-hint" style="margin-top:20px">按 Enter 键继续</div>
         </div>`
       document.body.appendChild(ov)
       const handler = (e) => {
-        if (e.code === 'Space') { document.removeEventListener('keydown', handler); ov.remove(); resolve() }
+        if (e.code === 'Enter') { document.removeEventListener('keydown', handler); ov.remove(); resolve() }
       }
       document.addEventListener('keydown', handler)
     })
