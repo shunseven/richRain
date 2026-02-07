@@ -25,13 +25,14 @@ const DEFAULT_NPCS = [
 const DEFAULT_MINIGAMES = [
   { id: genId(), name: '红包雨', icon: GAME_ICONS.hongbaoyu, probability: 100, maxCount: 1, remainingCount: 1, winCondition: '拿到最多钱的人获胜' },
   { id: genId(), name: '石头剪刀布', icon: GAME_ICONS.shitoujiandaobu, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '最终胜者获胜' },
-  { id: genId(), name: '比大小', icon: GAME_ICONS.bidaxiao, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '抽到最大数字的人获胜' },
+  { id: genId(), name: '抽卡比大小', icon: GAME_ICONS.bidaxiao, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '抽到最大数字的人获胜' },
   { id: genId(), name: '保龄球', icon: GAME_ICONS.baolingqiu, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '倒下最多的赢（三次机会）' },
   { id: genId(), name: '射击比赛', icon: GAME_ICONS.sheji, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '分数最高的赢（三次机会）' },
   { id: genId(), name: '海盗插剑', icon: GAME_ICONS.haidao, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '插中机关的输' },
   { id: genId(), name: '咬手鳄鱼', icon: GAME_ICONS.eyu, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '咬中的输' },
   { id: genId(), name: '抢保龄球', icon: GAME_ICONS.baolingqiu, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '谁先抢到谁，谁赢' },
   { id: genId(), name: '零食雨', icon: GAME_ICONS.lingshiyu, probability: 80, maxCount: 1, remainingCount: 1, winCondition: '谁抢得多 谁赢' },
+  { id: genId(), name: '摇骰子比大小', icon: GAME_ICONS.bidaxiao, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '摇骰子最大数字的人获胜' },
 ]
 
 const DEFAULT_EVENTS = [

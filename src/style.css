@@ -26,7 +26,7 @@ body {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background: radial-gradient(ellipse at center, #3a0a0a 0%, #1a0505 70%);
+  background: url('/start-bg.png') center/cover no-repeat;
   position: relative;
   overflow: hidden;
 }
