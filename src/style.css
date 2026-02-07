@@ -615,9 +615,7 @@ body {
   transform: translateY(0) scale(0.95);
 }
 
-.dice-display.dice-rolling {
-  animation: diceShake 0.1s ease-in-out infinite;
-}
+/* 3D骰子场外模式持续旋转 - 由JS控制 */
 
 /* ===== 小游戏胜者高亮 ===== */
 .rank-player.winner {
@@ -945,7 +943,7 @@ body {
   50% { opacity: 1; }
 }
 
-/* 骰子弹窗 - 喜庆风格 */
+/* 骰子弹窗 - 3D 立体骰子 */
 .dice-overlay {
   position: fixed;
   top: 0;
@@ -960,40 +958,96 @@ body {
   backdrop-filter: blur(4px);
 }
 
-.dice-display {
-  width: 160px;
-  height: 160px;
-  background: linear-gradient(135deg, #ffd700, #f5c500);
-  border-radius: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 5.5em;
-  font-weight: bold;
-  color: #8b0000;
-  box-shadow: 0 10px 50px rgba(255,215,0,0.4), 0 0 0 4px rgba(139,0,0,0.6);
-  animation: diceShake 0.1s ease-in-out infinite;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+/* 3D 骰子场景 */
+.dice-scene {
+  width: 140px;
+  height: 140px;
+  perspective: 500px;
+  perspective-origin: 50% 50%;
+  position: relative;
 }
 
-.dice-display.settled {
-  animation: diceSettle 0.4s ease;
-  transform: scale(1.15);
-  box-shadow: 0 15px 60px rgba(255,215,0,0.5), 0 0 30px rgba(255,215,0,0.3), 0 0 0 4px rgba(139,0,0,0.6);
+.dice-scene.settled {
+  animation: dice3DSettle 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@keyframes diceShake {
-  0% { transform: rotate(-5deg) scale(0.95); }
-  25% { transform: rotate(5deg) scale(1.05); }
-  50% { transform: rotate(-3deg) scale(0.98); }
-  75% { transform: rotate(3deg) scale(1.02); }
-  100% { transform: rotate(-5deg) scale(0.95); }
-}
-
-@keyframes diceSettle {
+@keyframes dice3DSettle {
   0% { transform: scale(1); }
-  50% { transform: scale(1.25); }
-  100% { transform: scale(1.15); }
+  40% { transform: scale(1.18); }
+  60% { transform: scale(0.95); }
+  80% { transform: scale(1.08); }
+  100% { transform: scale(1.05); }
+}
+
+.dice-scene.settled .dice-cube {
+  filter: drop-shadow(0 0 25px rgba(255,215,0,0.7));
+}
+
+/* 骰子立方体 */
+.dice-cube {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transform: translateZ(-70px);
+}
+
+/* 骰子面 */
+.dice-face {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  border-radius: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  padding: 18px;
+  gap: 2px;
+  background: linear-gradient(145deg, #fff5cc, #ffd700 40%, #e6b800 100%);
+  border: 3px solid #b8860b;
+  box-shadow: inset 0 0 25px rgba(139,69,19,0.12), inset 0 2px 0 rgba(255,255,255,0.4);
+  backface-visibility: hidden;
+}
+
+.dice-face.face-front  { transform: rotateY(0deg) translateZ(70px); }
+.dice-face.face-back   { transform: rotateY(180deg) translateZ(70px); }
+.dice-face.face-right  { transform: rotateY(90deg) translateZ(70px); }
+.dice-face.face-left   { transform: rotateY(-90deg) translateZ(70px); }
+.dice-face.face-top    { transform: rotateX(90deg) translateZ(70px); }
+.dice-face.face-bottom { transform: rotateX(-90deg) translateZ(70px); }
+
+/* 骰子点 */
+.dice-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  place-self: center;
+  transition: transform 0.1s ease;
+}
+
+.dice-dot.show {
+  background: radial-gradient(circle at 35% 35%, #b50000, #7a0000 60%, #4a0000);
+  box-shadow: inset 0 2px 4px rgba(255,200,200,0.2), 0 2px 4px rgba(0,0,0,0.35);
+}
+
+/* 骰子底部阴影 */
+.dice-shadow {
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90px;
+  height: 16px;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.35), transparent 70%);
+  border-radius: 50%;
+  filter: blur(4px);
+  transition: all 0.3s ease;
+}
+
+.dice-scene.settled .dice-shadow {
+  width: 110px;
+  height: 20px;
+  opacity: 0.7;
 }
 
 /* 事件滚动器 - 喜庆风格 */

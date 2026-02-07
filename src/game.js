@@ -20,6 +20,60 @@ const TOKEN_R = 15
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms))
 
+// === 3D 骰子辅助 ===
+const DICE_DOT_MAP = {
+  1: [4],
+  2: [2, 6],
+  3: [2, 4, 6],
+  4: [0, 2, 6, 8],
+  5: [0, 2, 4, 6, 8],
+  6: [0, 2, 3, 5, 6, 8],
+}
+
+function diceFaceHTML(n) {
+  const dots = DICE_DOT_MAP[n]
+  let html = ''
+  for (let i = 0; i < 9; i++) {
+    html += `<span class="dice-dot${dots.includes(i) ? ' show' : ''}"></span>`
+  }
+  return html
+}
+
+function dice3DHTML() {
+  return `<div class="dice-scene" id="dice-scene">
+    <div class="dice-cube" id="dice-cube">
+      <div class="dice-face face-front">${diceFaceHTML(1)}</div>
+      <div class="dice-face face-back">${diceFaceHTML(6)}</div>
+      <div class="dice-face face-right">${diceFaceHTML(2)}</div>
+      <div class="dice-face face-left">${diceFaceHTML(5)}</div>
+      <div class="dice-face face-top">${diceFaceHTML(3)}</div>
+      <div class="dice-face face-bottom">${diceFaceHTML(4)}</div>
+    </div>
+    <div class="dice-shadow"></div>
+  </div>`
+}
+
+// 多圈旋转 + 最终偏移 → 展示正确面
+// 面配置: front=1, back=6, right=2, left=5, top=3, bottom=4
+const DICE_SPIN = {
+  1: 'rotateX(720deg) rotateY(1080deg)',
+  2: 'rotateX(720deg) rotateY(990deg)',
+  3: 'rotateX(630deg) rotateY(1080deg)',
+  4: 'rotateX(810deg) rotateY(1080deg)',
+  5: 'rotateX(720deg) rotateY(1170deg)',
+  6: 'rotateX(720deg) rotateY(1260deg)',
+}
+
+// 各面最终目标角度 (mod 360)
+const DICE_TARGET = {
+  1: { x: 0, y: 0 },
+  2: { x: 0, y: 270 },
+  3: { x: 270, y: 0 },
+  4: { x: 90, y: 0 },
+  5: { x: 0, y: 90 },
+  6: { x: 0, y: 180 },
+}
+
 // === 系统事件定义（每个20%概率，用于系统事件格子） ===
 const _sysIcon = (emoji) => `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text x="50" y="68" text-anchor="middle" font-size="52">${emoji}</text></svg>`)}`
 const SYSTEM_EVENTS = [
@@ -587,7 +641,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
 
   function setHint(text) { document.getElementById('game-hint').textContent = text }
 
-  // ===== 骰子动画 =====
+  // ===== 3D 骰子动画 =====
   function rollDice() {
     if (diceMode === 'external') {
       return rollDiceExternal()
@@ -595,30 +649,39 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
     return new Promise(resolve => {
       const result = Math.floor(Math.random() * 6) + 1
       const ov = document.createElement('div'); ov.className = 'dice-overlay'
-      ov.innerHTML = `<div class="dice-display" id="dice-num">1</div>`
+      ov.innerHTML = dice3DHTML()
       document.body.appendChild(ov)
       playDiceRoll()  // 🔊 骰子摇动音效
-      const dn = ov.querySelector('#dice-num')
-      let count = 0
-      const iv = setInterval(() => {
-        dn.textContent = Math.floor(Math.random() * 6) + 1
-        count++
-        if (count >= 22) {
-          clearInterval(iv)
-          dn.textContent = result; dn.classList.add('settled')
-          playDiceResult()  // 🔊 骰子结果音效
-          setTimeout(() => { ov.remove(); resolve(result) }, 900)
-        }
-      }, 90)
+
+      const cube = ov.querySelector('#dice-cube')
+      const scene = ov.querySelector('#dice-scene')
+      // 初始倾斜位置
+      cube.style.transform = 'translateZ(-70px) rotateX(15deg) rotateY(-15deg)'
+      cube.getBoundingClientRect() // 强制 reflow
+
+      // 动画翻滚到结果面
+      requestAnimationFrame(() => {
+        cube.style.transition = 'transform 2s cubic-bezier(0.15, 0.8, 0.25, 1)'
+        cube.style.transform = `translateZ(-70px) ${DICE_SPIN[result]}`
+      })
+
+      // 停稳效果
+      setTimeout(() => {
+        playDiceResult()  // 🔊 骰子结果音效
+        scene.classList.add('settled')
+      }, 2000)
+
+      // 移除并返回结果
+      setTimeout(() => { ov.remove(); resolve(result) }, 2900)
     })
   }
 
-  // ===== 场外骰子模式 =====
+  // ===== 场外骰子模式（3D版） =====
   function rollDiceExternal() {
     return new Promise(resolve => {
       const ov = document.createElement('div'); ov.className = 'dice-overlay'
       ov.innerHTML = `
-        <div class="dice-display dice-rolling" id="dice-num">1</div>
+        ${dice3DHTML()}
         <div class="dice-input-area">
           <div class="dice-input-hint">🎯 请输入场外骰子点数</div>
           <div class="dice-number-buttons" id="dice-buttons">
@@ -626,26 +689,49 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
           </div>
         </div>`
       document.body.appendChild(ov)
-      const dn = ov.querySelector('#dice-num')
 
-      // 持续滚动动画
-      const iv = setInterval(() => {
-        dn.textContent = Math.floor(Math.random() * 6) + 1
-      }, 90)
+      const cube = ov.querySelector('#dice-cube')
+      const scene = ov.querySelector('#dice-scene')
+      let spinX = 0, spinY = 0
+
+      // 持续旋转翻滚
+      cube.style.transform = 'translateZ(-70px) rotateX(0deg) rotateY(0deg)'
+      const spinIv = setInterval(() => {
+        spinX += 80 + Math.random() * 100
+        spinY += 100 + Math.random() * 140
+        cube.style.transition = 'transform 0.18s linear'
+        cube.style.transform = `translateZ(-70px) rotateX(${spinX}deg) rotateY(${spinY}deg)`
+      }, 180)
+
+      function settle(num) {
+        clearInterval(spinIv)
+        // 计算最终角度：至少再转 1 圈后落到正确面
+        const target = DICE_TARGET[num]
+        let finalX = spinX + 360
+        finalX = finalX - (finalX % 360) + target.x
+        if (finalX <= spinX + 180) finalX += 360
+        let finalY = spinY + 360
+        finalY = finalY - (finalY % 360) + target.y
+        if (finalY <= spinY + 180) finalY += 360
+
+        cube.style.transition = 'transform 1.5s cubic-bezier(0.15, 0.8, 0.25, 1)'
+        cube.style.transform = `translateZ(-70px) rotateX(${finalX}deg) rotateY(${finalY}deg)`
+
+        const inputArea = ov.querySelector('.dice-input-area')
+        if (inputArea) inputArea.style.display = 'none'
+
+        setTimeout(() => {
+          playDiceResult()  // 🔊 骰子结果音效
+          scene.classList.add('settled')
+        }, 1500)
+
+        setTimeout(() => { ov.remove(); resolve(num) }, 2400)
+      }
 
       // 点击数字按钮
       ov.querySelectorAll('.dice-num-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          const num = parseInt(btn.dataset.num)
-          clearInterval(iv)
-          dn.textContent = num
-          dn.classList.remove('dice-rolling')
-          dn.classList.add('settled')
-          playDiceResult()  // 🔊 骰子结果音效
-          // 隐藏输入区域
-          const inputArea = ov.querySelector('.dice-input-area')
-          if (inputArea) inputArea.style.display = 'none'
-          setTimeout(() => { ov.remove(); resolve(num) }, 900)
+          settle(parseInt(btn.dataset.num))
         })
       })
 
@@ -654,13 +740,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
         const num = parseInt(e.key)
         if (num >= 1 && num <= 6) {
           document.removeEventListener('keydown', keyHandler)
-          clearInterval(iv)
-          dn.textContent = num
-          dn.classList.remove('dice-rolling')
-          dn.classList.add('settled')
-          const inputArea = ov.querySelector('.dice-input-area')
-          if (inputArea) inputArea.style.display = 'none'
-          setTimeout(() => { ov.remove(); resolve(num) }, 900)
+          settle(num)
         }
       }
       document.addEventListener('keydown', keyHandler)
