@@ -1005,16 +1005,29 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
   // ===== 事件结果展示（事件不给金币，仅展示） =====
   function showEventResult(event) {
     return new Promise(resolve => {
-      const isReward = event.type === 'reward'
+      let typeLabel = '✨ 奖励事件'
+      let typeClass = 'reward'
+      if (event.type === 'punishment') {
+        typeLabel = '😤 惩罚事件'
+        typeClass = 'punishment'
+      } else if (event.type === 'assign_task') {
+        typeLabel = '📝 指定任务'
+        typeClass = 'reward'
+      } else if (event.type === 'npc_system') {
+        typeLabel = '⚡ NPC系统事件'
+        typeClass = 'reward'
+      }
+
       // 🔊 根据事件类型播放不同音效
-      if (isReward) playRewardEvent(); else playPunishmentEvent()
+      if (event.type === 'punishment') playPunishmentEvent(); else playRewardEvent()
+
       const ov = document.createElement('div'); ov.className = 'event-result-overlay'
       ov.innerHTML = `
         <div class="event-result">
           <div class="event-icon"><img src="${event.icon}"/></div>
           <div class="event-name">${event.name}</div>
-          <div class="event-effect ${isReward ? 'reward' : 'punishment'}">
-            ${isReward ? '✨ 奖励事件' : '😤 惩罚事件'}
+          <div class="event-effect ${typeClass}">
+            ${typeLabel}
           </div>
           <div style="color:rgba(255,255,255,0.7);margin-top:10px;font-size:1.1em">${event.description || ''}</div>
           <div class="continue-hint" style="margin-top:20px">按空格键继续</div>
@@ -1332,6 +1345,27 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
       if (ev) {
         p.eventLog.push({ category: 'npc', name: ev.name, type: ev.type, icon: ev.icon, npcName: randomNpc ? randomNpc.name : '' })
         await showEventResult(ev)
+
+        // NPC系统事件：再摇一次
+        if (ev.type === 'npc_system' && (ev.name.includes('再摇一次') || ev.description.includes('再摇一次')) && randomNpc) {
+          setHint(`${randomNpc.name} 正在帮你再摇一次骰子...`)
+          await sleep(500)
+
+          // 构造一个临时的NPC玩家对象用于显示
+          const npcPlayer = {
+             ...p,
+             name: randomNpc.name,
+             avatar: randomNpc.avatar,
+             color: randomNpc.color || p.color
+          }
+
+          const dice = await rollDice(npcPlayer)
+          setHint(`${randomNpc.name} 摇到了 ${dice}！${p.name} 移动中...`)
+          await sleep(300)
+          await movePlayer(pi, dice)
+          // 递归处理落地事件
+          await handleTileLanding(pi)
+        }
       }
     }
   }

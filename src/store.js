@@ -58,6 +58,7 @@ const DEFAULT_NPC_EVENTS = [
   { id: genId(), name: '小游戏代玩', icon: NPC_EVENT_ICONS.daiwan, type: 'reward', description: '请求下一次小游戏由NPC代玩' },
   { id: genId(), name: '送寒假练习题', icon: NPC_EVENT_ICONS.lianxiti, type: 'reward', description: '送一本寒假练习题' },
   { id: genId(), name: '要指定零食', icon: NPC_EVENT_ICONS.yaolingshi, type: 'reward', description: '向NPC要一个指定的零食' },
+  { id: genId(), name: '帮忙再摇一次', icon: SYSTEM_ICONS.dice, type: 'npc_system', description: 'NPC帮你再摇一次骰子' },
 ]
 
 const DEFAULT_FINAL_PRIZE = {

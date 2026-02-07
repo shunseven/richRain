@@ -407,6 +407,8 @@ export function showEventEditor(container, navigate) {
       { key: 'type', label: '事件类型', type: 'select', options: [
         { value: 'reward', label: '🎁 奖励' },
         { value: 'punishment', label: '😤 惩罚' },
+        { value: 'assign_task', label: '📝 指定角色做一件事' },
+        { value: 'npc_system', label: '⚡ NPC系统事件' },
       ]},
       { key: 'description', label: '描述', type: 'text' },
     ], data, onSave)
