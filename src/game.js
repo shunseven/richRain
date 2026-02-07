@@ -1114,7 +1114,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
           <div class="mg-icon"><img src="${game.icon}"/></div>
           <div class="mg-name">${game.name}</div>
           <div class="mg-condition">🏆 胜利条件: <span>${game.winCondition}</span></div>
-          <div style="color:rgba(255,255,255,0.4);margin-bottom:15px">👆 点击选择胜利者（胜者 +5💰，其余 +2💰）</div>
+          <div style="color:rgba(255,255,255,0.4);margin-bottom:15px">👆 点击选择胜利者（可多选，最多3人）</div>
           <div class="player-rank-area" id="rank-area">
             ${players.map((p, i) => `
               <div class="rank-player" data-idx="${i}">
@@ -1123,42 +1123,82 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
                 <div class="rank-badge" id="badge-${i}"></div>
               </div>`).join('')}
           </div>
-          <div class="rank-instruction" id="rank-inst">👆 点击胜利者</div>
+          <button class="btn-confirm-winner" id="btn-confirm-winner" style="margin-top:20px;padding:10px 20px;font-size:1.2em;border-radius:5px;border:none;background:#f1c40f;color:#c0392b;font-weight:bold;cursor:pointer;">确认胜利者</button>
+          <div class="rank-instruction" id="rank-inst" style="margin-top:10px;display:none;">按空格键继续</div>
         </div>`
       document.body.appendChild(ov)
       resolveAllImages(ov)
 
+      const selectedWinners = new Set()
+      const btnConfirm = ov.querySelector('#btn-confirm-winner')
+      const rankInst = ov.querySelector('#rank-inst')
+
       ov.querySelectorAll('.rank-player').forEach(el => {
         el.addEventListener('click', () => {
-          const winnerIdx = parseInt(el.dataset.idx)
-          playVictory()  // 🔊 胜利音效
-          // 胜者 +5 金币
-          players[winnerIdx].coins += 5
-          // 其余玩家 +2 金币
-          players.forEach((p, i) => {
-            if (i !== winnerIdx) p.coins += 2
-          })
+          if (btnConfirm.style.display === 'none') return // Already confirmed
 
-          // 更新显示
-          players.forEach((p, i) => {
-            const badge = ov.querySelector(`#badge-${i}`)
-            if (i === winnerIdx) {
-              badge.textContent = '🏆 胜利! +5💰'
-              badge.style.color = '#ffd700'
-              ov.querySelector(`.rank-player[data-idx="${i}"]`).classList.add('ranked', 'winner')
-            } else {
-              badge.textContent = '+2💰'
-              badge.style.color = '#aaa'
-              ov.querySelector(`.rank-player[data-idx="${i}"]`).classList.add('ranked')
+          const idx = parseInt(el.dataset.idx)
+          if (selectedWinners.has(idx)) {
+            selectedWinners.delete(idx)
+            el.classList.remove('selected-winner')
+            el.style.border = '2px solid transparent'
+          } else {
+            if (selectedWinners.size >= 3) {
+              alert('最多选择3位胜利者！')
+              return
             }
-          })
-
-          ov.querySelector('#rank-inst').textContent = '选择完成！按空格键继续'
-          const handler = (e) => {
-            if (e.code === 'Space') { document.removeEventListener('keydown', handler); ov.remove(); resolve() }
+            selectedWinners.add(idx)
+            el.classList.add('selected-winner')
+            el.style.border = '2px solid #f1c40f'
           }
-          document.addEventListener('keydown', handler)
         })
+      })
+
+      btnConfirm.addEventListener('click', () => {
+        if (selectedWinners.size === 0) {
+          alert('请至少选择一位胜利者！')
+          return
+        }
+
+        playVictory()  // 🔊 胜利音效
+        btnConfirm.style.display = 'none'
+        rankInst.style.display = 'block'
+        rankInst.textContent = '选择完成！按空格键继续'
+
+        // 结算规则
+        // 1人胜: 胜者+5, 其余+2
+        // 2人胜: 胜者+4, 其余+2
+        // 3人胜: 胜者+3, 其余+2
+        let winCoins = 5
+        if (selectedWinners.size === 2) winCoins = 4
+        if (selectedWinners.size === 3) winCoins = 3
+
+        const winners = Array.from(selectedWinners)
+        
+        // 更新金币和UI
+        players.forEach((p, i) => {
+          const badge = ov.querySelector(`#badge-${i}`)
+          const playerEl = ov.querySelector(`.rank-player[data-idx="${i}"]`)
+          
+          if (selectedWinners.has(i)) {
+            p.coins += winCoins
+            badge.textContent = `🏆 +${winCoins}💰`
+            badge.style.color = '#ffd700'
+            playerEl.classList.add('ranked', 'winner')
+            playerEl.style.border = '2px solid #ffd700'
+          } else {
+            p.coins += 2
+            badge.textContent = '+2💰'
+            badge.style.color = '#aaa'
+            playerEl.classList.add('ranked')
+            playerEl.style.border = 'none'
+          }
+        })
+
+        const handler = (e) => {
+          if (e.code === 'Space') { document.removeEventListener('keydown', handler); ov.remove(); resolve() }
+        }
+        document.addEventListener('keydown', handler)
       })
     })
   }

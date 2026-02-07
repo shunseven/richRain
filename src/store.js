@@ -24,16 +24,11 @@ const DEFAULT_NPCS = [
 const DEFAULT_MINIGAMES = [
   { id: genId(), name: '红包雨', icon: GAME_ICONS.hongbaoyu, probability: 100, maxCount: 1, remainingCount: 1, winCondition: '拿到最多钱的人获胜' },
   { id: genId(), name: '石头剪刀布', icon: GAME_ICONS.shitoujiandaobu, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '最终胜者获胜' },
-  { id: genId(), name: '猜数字', icon: GAME_ICONS.caishuzi, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '最先猜中数字的人获胜' },
-  { id: genId(), name: '抢凳子', icon: GAME_ICONS.qiangdengzi, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '最后留在凳子上的人获胜' },
-  { id: genId(), name: '记忆翻牌', icon: GAME_ICONS.jiyifanpai, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '找到最多配对的人获胜' },
   { id: genId(), name: '比大小', icon: GAME_ICONS.bidaxiao, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '抽到最大数字的人获胜' },
-  { id: genId(), name: '接水果', icon: GAME_ICONS.jieshuiguo, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '接到最多水果的人获胜' },
-  { id: genId(), name: '跳绳计数', icon: GAME_ICONS.tiaosheng, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '跳绳次数最多的人获胜' },
-  { id: genId(), name: '快速计算', icon: GAME_ICONS.kuaisujisuan, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '最快算出正确答案的人获胜' },
-  { id: genId(), name: '猜拳大师', icon: GAME_ICONS.caiquandashi, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '猜拳连胜最多的人获胜' },
-  { id: genId(), name: '传话游戏', icon: GAME_ICONS.chuanhua, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '传话最准确的队伍获胜' },
-  { id: genId(), name: '手速比拼', icon: GAME_ICONS.shousubi, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '点击速度最快的人获胜' },
+  { id: genId(), name: '保龄球', icon: GAME_ICONS.baolingqiu, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '倒下最多的赢（三次机会）' },
+  { id: genId(), name: '射击比赛', icon: GAME_ICONS.sheji, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '分数最高的赢（三次机会）' },
+  { id: genId(), name: '海盗插剑', icon: GAME_ICONS.haidao, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '插中机关的输' },
+  { id: genId(), name: '咬手鳄鱼', icon: GAME_ICONS.eyu, probability: 50, maxCount: 100, remainingCount: 100, winCondition: '咬中的输' },
 ]
 
 const DEFAULT_EVENTS = [
