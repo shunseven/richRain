@@ -339,19 +339,169 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
   })
   resolveAllImages(avatarOverlay)
 
-  // 星星标记
-  const starText = new Text({ x: tilePos[starPos].x, y: tilePos[starPos].y + 2, width: TILE_W, text: '⭐', fontSize: 28, textAlign: 'center' })
+  // ===== 星星标记 - 华丽动画版 =====
+  const STAR_SIZE = 56
+  // 记录星星格子中心坐标（用于动画偏移计算）
+  let starBaseX = tilePos[starPos].x, starBaseY = tilePos[starPos].y
+  const starCX = () => starBaseX + TILE_W / 2
+  const starCY = () => starBaseY + TILE_W / 2
+
+  // ① 外层大光晕（x,y 为左上角）
+  const starGlowOuter = new Ellipse({
+    x: starCX() - STAR_SIZE * 0.75,
+    y: starCY() - STAR_SIZE * 0.75,
+    width: STAR_SIZE * 1.5, height: STAR_SIZE * 1.5,
+    fill: { type: 'radial', stops: [
+      { offset: 0, color: 'rgba(255,215,0,0.35)' },
+      { offset: 0.5, color: 'rgba(255,215,0,0.12)' },
+      { offset: 1, color: 'rgba(255,215,0,0)' },
+    ]},
+    shadow: { x: 0, y: 0, blur: 25, color: 'rgba(255,215,0,0.5)' },
+  })
+  leafer.add(starGlowOuter)
+
+  // ② 内层光圈
+  const starGlowInner = new Ellipse({
+    x: starCX() - STAR_SIZE * 0.5,
+    y: starCY() - STAR_SIZE * 0.5,
+    width: STAR_SIZE, height: STAR_SIZE,
+    fill: { type: 'radial', stops: [
+      { offset: 0, color: 'rgba(255,235,100,0.45)' },
+      { offset: 0.6, color: 'rgba(255,215,0,0.15)' },
+      { offset: 1, color: 'rgba(255,215,0,0)' },
+    ]},
+  })
+  leafer.add(starGlowInner)
+
+  // ③ 环绕光点（8颗小星光围绕星星旋转）
+  const SPARKLE_COUNT = 8
+  const SPARKLE_ORBIT = 38
+  const sparkles = []
+  for (let i = 0; i < SPARKLE_COUNT; i++) {
+    const s = new Ellipse({
+      x: 0, y: 0, width: 5, height: 5,
+      fill: i % 2 === 0 ? 'rgba(255,235,120,0.9)' : 'rgba(255,200,50,0.7)',
+      shadow: { x: 0, y: 0, blur: 6, color: 'rgba(255,215,0,0.6)' },
+    })
+    leafer.add(s)
+    sparkles.push(s)
+  }
+
+  // ④ 闪烁粒子（随机飘出的小星星）
+  const TWINKLE_COUNT = 6
+  const twinkles = []
+  for (let i = 0; i < TWINKLE_COUNT; i++) {
+    const t = new Text({
+      x: 0, y: 0, text: '✦', fontSize: 8 + Math.random() * 6,
+      fill: `rgba(255,${200 + Math.floor(Math.random() * 55)},${50 + Math.floor(Math.random() * 100)},0.8)`,
+      opacity: 0,
+    })
+    leafer.add(t)
+    twinkles.push({
+      el: t,
+      angle: Math.random() * Math.PI * 2,
+      radius: 20 + Math.random() * 25,
+      speed: 0.3 + Math.random() * 0.5,
+      phase: Math.random() * Math.PI * 2,
+      drift: 0.8 + Math.random() * 1.2,
+    })
+  }
+
+  // ⑤ 星星emoji - 居中在格子内（textAlign居中，y偏移让星星视觉居中）
+  const STAR_FONT = 40
+  const starText = new Text({
+    x: starBaseX, y: starCY() - STAR_FONT / 2 - 30,
+    width: TILE_W, text: '⭐', fontSize: STAR_FONT, textAlign: 'center',
+  })
   leafer.add(starText)
-  const starLabel = new Text({ x: tilePos[starPos].x, y: tilePos[starPos].y + 34, width: TILE_W, text: '10💰', fill: '#ffd700', fontSize: 13, textAlign: 'center' })
+
+  // ⑥ 价格标签 - 在星星下方
+  const starLabel = new Text({
+    x: starBaseX, y: starCY() + STAR_FONT / 2 - 8,
+    width: TILE_W, text: '10💰', fill: '#ffd700', fontSize: 14,
+    fontWeight: 'bold', textAlign: 'center',
+  })
   leafer.add(starLabel)
+
+  // ===== 星星综合动画 =====
+  let starAnimT = 0
+  const starPulseTimer = setInterval(() => {
+    starAnimT += 0.06
+    const cx = starCX()
+    const cy = starCY()
+
+    // --- 呼吸光晕（从中心缩放） ---
+    const pulse = Math.sin(starAnimT)
+    const outerScale = 1 + pulse * 0.15
+    const outerHalf = STAR_SIZE * 0.75
+    starGlowOuter.x = cx - outerHalf * outerScale
+    starGlowOuter.y = cy - outerHalf * outerScale
+    starGlowOuter.width = STAR_SIZE * 1.5 * outerScale
+    starGlowOuter.height = STAR_SIZE * 1.5 * outerScale
+
+    const innerScale = 1 + pulse * 0.08
+    const innerHalf = STAR_SIZE * 0.5
+    starGlowInner.x = cx - innerHalf * innerScale
+    starGlowInner.y = cy - innerHalf * innerScale
+    starGlowInner.width = STAR_SIZE * innerScale
+    starGlowInner.height = STAR_SIZE * innerScale
+
+    // --- 星星上下浮动 ---
+    const floatY = Math.sin(starAnimT * 0.8) * 4
+    starText.y = cy - STAR_FONT / 2 - 30 + floatY
+
+    // --- 环绕光点旋转 ---
+    for (let i = 0; i < SPARKLE_COUNT; i++) {
+      const baseAngle = (i / SPARKLE_COUNT) * Math.PI * 2
+      const angle = baseAngle + starAnimT * 0.8
+      const rx = SPARKLE_ORBIT + Math.sin(starAnimT * 1.5 + i) * 4
+      const ry = SPARKLE_ORBIT * 0.7 + Math.cos(starAnimT * 1.2 + i) * 3
+      sparkles[i].x = cx + Math.cos(angle) * rx - 2.5
+      sparkles[i].y = cy + Math.sin(angle) * ry - 2.5
+      sparkles[i].opacity = 0.4 + Math.sin(starAnimT * 3 + i * 1.5) * 0.4
+      const sz = 3 + Math.sin(starAnimT * 2 + i) * 2
+      sparkles[i].width = sz
+      sparkles[i].height = sz
+    }
+
+    // --- 闪烁粒子飘散 ---
+    for (let i = 0; i < TWINKLE_COUNT; i++) {
+      const tw = twinkles[i]
+      tw.phase += 0.04
+      if (tw.phase > Math.PI * 2) {
+        tw.phase = 0
+        tw.angle = Math.random() * Math.PI * 2
+        tw.radius = 5 + Math.random() * 8
+      }
+      const progress = tw.phase / (Math.PI * 2)
+      const curR = tw.radius + progress * 35
+      tw.el.x = cx + Math.cos(tw.angle + progress * 0.5) * curR - 5
+      tw.el.y = cy + Math.sin(tw.angle + progress * 0.5) * curR - 5 + floatY * 0.3
+      tw.el.opacity = progress < 0.2 ? progress / 0.2 * 0.8 : (1 - progress) * 0.8
+      tw.el.rotation = progress * 180
+      const pScale = progress < 0.3 ? 1 : 1 - (progress - 0.3) * 0.7
+      tw.el.scaleX = pScale
+      tw.el.scaleY = pScale
+    }
+  }, 50)
+
+  function moveStarElements(pos) {
+    starBaseX = pos.x; starBaseY = pos.y
+    const cx = starCX(), cy = starCY()
+    starGlowOuter.x = cx - STAR_SIZE * 0.75
+    starGlowOuter.y = cy - STAR_SIZE * 0.75
+    starGlowInner.x = cx - STAR_SIZE * 0.5
+    starGlowInner.y = cy - STAR_SIZE * 0.5
+    starText.x = pos.x; starText.y = cy - STAR_FONT / 2 - 30
+    starLabel.x = pos.x; starLabel.y = cy + STAR_FONT / 2 - 8
+  }
 
   function moveStar() {
     const normals = []
     for (let i = 0; i < BOARD_SIZE; i++) { if (getTileType(i) === 'normal' && i !== starPos) normals.push(i) }
     if (normals.length === 0) return
     starPos = normals[Math.floor(Math.random() * normals.length)]
-    starText.x = tilePos[starPos].x; starText.y = tilePos[starPos].y + 2
-    starLabel.x = tilePos[starPos].x; starLabel.y = tilePos[starPos].y + 28
+    moveStarElements(tilePos[starPos])
   }
 
   // 角色棋子
@@ -958,6 +1108,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto') {
           phase = 'gameover'
           stopBGM()  // 🔊 停止背景音乐
           playGameOver()  // 🔊 游戏结束音效
+          clearInterval(starPulseTimer)  // 清理星星动画
           await sleep(500)
           // 清理键盘事件
           document.removeEventListener('keydown', onKeyDown)
