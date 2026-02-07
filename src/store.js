@@ -6,19 +6,20 @@ const genId = () => `id_${uid++}`
 
 // ===== 默认数据 =====
 const DEFAULT_CHARACTERS = [
-  { id: genId(), name: '琪琪', avatar: generateAvatar('琪', '#e74c3c'), color: '#e74c3c' },
-  { id: genId(), name: '涵涵', avatar: generateAvatar('涵', '#3498db'), color: '#3498db' },
-  { id: genId(), name: '莹莹', avatar: generateAvatar('莹', '#2ecc71'), color: '#2ecc71' },
+  { id: genId(), name: '琪琪', avatar: '/roles/qi.png', color: '#e74c3c' },
+  { id: genId(), name: '涵涵', avatar: '/roles/han.png', color: '#3498db' },
+  { id: genId(), name: '滢滢', avatar: '/roles/ying.png', color: '#2ecc71' },
 ]
 
 const DEFAULT_NPCS = [
-  { id: genId(), name: '爷爷', avatar: generateAvatar('爷', '#636e72'), color: '#636e72' },
-  { id: genId(), name: '奶奶', avatar: generateAvatar('奶', '#b2bec3'), color: '#b2bec3' },
-  { id: genId(), name: '顺文', avatar: generateAvatar('顺', '#00b894'), color: '#00b894' },
-  { id: genId(), name: '亦文', avatar: generateAvatar('亦', '#fdcb6e'), color: '#fdcb6e' },
-  { id: genId(), name: '秋平', avatar: generateAvatar('秋', '#e17055'), color: '#e17055' },
-  { id: genId(), name: '淑娟', avatar: generateAvatar('淑', '#74b9ff'), color: '#74b9ff' },
-  { id: genId(), name: '广文', avatar: generateAvatar('广', '#a29bfe'), color: '#a29bfe' },
+  { id: genId(), name: '爷爷', avatar: '/roles/biao.png', color: '#636e72' },
+  { id: genId(), name: '奶奶', avatar: '/roles/ling.png', color: '#b2bec3' },
+  { id: genId(), name: '广文', avatar: '/roles/guang.png', color: '#a29bfe' },
+  { id: genId(), name: '亦文', avatar: '/roles/yi.png', color: '#fdcb6e' },
+  { id: genId(), name: '秋平', avatar: '/roles/ping.png', color: '#e17055' },
+  { id: genId(), name: '顺文', avatar: '/roles/shun.png', color: '#00b894' },
+  { id: genId(), name: '淑娟', avatar: '/roles/juen.png', color: '#74b9ff' },
+
 ]
 
 const DEFAULT_MINIGAMES = [
@@ -48,7 +49,7 @@ const DEFAULT_EVENTS = [
   { id: genId(), name: '扫地两次', icon: EVENT_ICONS.saodi, type: 'punishment', description: '需要扫地一次' },
   { id: genId(), name: '洗碗三次', icon: EVENT_ICONS.xiwan, type: 'punishment', description: '需要洗碗一次' },
   { id: genId(), name: '扫地三次', icon: EVENT_ICONS.saodi, type: 'punishment', description: '需要扫地一次' },
-  { id: genId(), name: '喝一次歌', icon: EVENT_ICONS.sing, type: 'punishment', description: '为大家唱一首歌' },
+  { id: genId(), name: '唱一首歌', icon: EVENT_ICONS.sing, type: 'punishment', description: '为大家唱一首歌' },
 ]
 
 const DEFAULT_NPC_EVENTS = [
