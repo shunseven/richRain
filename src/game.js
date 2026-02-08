@@ -1213,6 +1213,42 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
         banner.textContent = `🎉 胜者获得 +${winCoins} 💰 金币！`
         const rankArea = ov.querySelector('#rank-area')
         rankArea.parentNode.insertBefore(banner, rankArea)
+
+        // 金币从上方掉落进头像的动画 + 数字从0滚动到目标值
+        const animateCoinDrop = (playerEl, targetCoins, isWinner) => {
+          const avatarEl = playerEl.querySelector('.rank-avatar')
+          const badge = playerEl.querySelector('.rank-badge')
+
+          // 1. 金币掉落动画：多个💰从头像上方依次掉入
+          const dropCount = isWinner ? targetCoins : targetCoins
+          for (let k = 0; k < dropCount; k++) {
+            const coin = document.createElement('div')
+            coin.className = 'coin-drop'
+            coin.textContent = '💰'
+            coin.style.left = (Math.random() * 30 + 15) + 'px'
+            coin.style.top = '0px'
+            coin.style.animationDelay = (k * 0.15) + 's'
+            playerEl.style.position = 'relative'
+            playerEl.style.overflow = 'visible'
+            playerEl.appendChild(coin)
+            setTimeout(() => coin.remove(), 800 + k * 150)
+          }
+
+          // 2. 金币数字从0滚动到目标值
+          badge.style.color = isWinner ? '#ffd700' : '#aaa'
+          let current = 0
+          const prefix = isWinner ? '🏆 +' : '+'
+          const suffix = ' 💰'
+          badge.textContent = `${prefix}0${suffix}`
+
+          const countInterval = setInterval(() => {
+            current++
+            badge.textContent = `${prefix}${current}${suffix}`
+            if (current >= targetCoins) {
+              clearInterval(countInterval)
+            }
+          }, isWinner ? (800 / targetCoins) : (600 / targetCoins))
+        }
         
         // 更新金币和UI
         players.forEach((p, i) => {
@@ -1221,29 +1257,14 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
           
           if (selectedWinners.has(i)) {
             p.coins += winCoins
-            badge.textContent = `🏆 +${winCoins} 💰`
-            badge.style.color = '#ffd700'
             playerEl.classList.add('ranked', 'winner')
             playerEl.style.border = '2px solid #ffd700'
-
-            // 发射金币粒子特效
-            const rect = playerEl.getBoundingClientRect()
-            for (let k = 0; k < 6; k++) {
-              const particle = document.createElement('div')
-              particle.className = 'coin-particle'
-              particle.textContent = '💰'
-              particle.style.left = (rect.left + rect.width / 2 + (Math.random() - 0.5) * 60) + 'px'
-              particle.style.top = (rect.top + 10) + 'px'
-              particle.style.animationDelay = (k * 0.12) + 's'
-              document.body.appendChild(particle)
-              setTimeout(() => particle.remove(), 1500)
-            }
+            animateCoinDrop(playerEl, winCoins, true)
           } else {
             p.coins += 2
-            badge.textContent = '+2 💰'
-            badge.style.color = '#aaa'
             playerEl.classList.add('ranked')
             playerEl.style.border = 'none'
+            animateCoinDrop(playerEl, 2, false)
           }
         })
 
