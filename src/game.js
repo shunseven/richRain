@@ -982,7 +982,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
   }
 
   // ===== 事件/NPC滚动器 =====
-  function showRoller(title, pool, count = 6, characterInfo = null) {
+  function showRoller(title, pool, count = 6, characterInfo = null, characterInfo2 = null) {
     return new Promise(resolve => {
       if (pool.length === 0) { resolve(null); return }
       playRollerSpin()  // 🔊 滚动器旋转音效
@@ -1002,8 +1002,14 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
 
       const charHTML = characterInfo ? `
         <div class="roller-character-info">
-          <div class="roller-char-avatar"><img src="${characterInfo.avatar}"/></div>
-          <div class="roller-char-name">${characterInfo.name}</div>
+          <div class="roller-char-avatar" style="border-color:${characterInfo.color || '#e84393'}; box-shadow: 0 0 20px ${characterInfo.color || '#e84393'}66, 0 4px 15px rgba(0,0,0,0.5)"><img src="${characterInfo.avatar}"/></div>
+          <div class="roller-char-name" style="color:${characterInfo.color || '#ffd700'}">${characterInfo.name}</div>
+        </div>` : ''
+
+      const char2HTML = characterInfo2 ? `
+        <div class="roller-character-info">
+          <div class="roller-char-avatar" style="border-color:${characterInfo2.color || '#e84393'}; box-shadow: 0 0 20px ${characterInfo2.color || '#e84393'}66, 0 4px 15px rgba(0,0,0,0.5)"><img src="${characterInfo2.avatar}"/></div>
+          <div class="roller-char-name" style="color:${characterInfo2.color || '#ffd700'}">${characterInfo2.name}</div>
         </div>` : ''
 
       const rollerContainerHTML = `
@@ -1014,10 +1020,11 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
           </div>
         </div>`
 
+      const hasChar = characterInfo || characterInfo2
       const ov = document.createElement('div'); ov.className = 'roller-overlay'
-      ov.innerHTML = characterInfo
+      ov.innerHTML = hasChar
         ? `<div class="roller-title">${title}</div>
-           <div class="roller-with-character">${charHTML}${rollerContainerHTML}</div>`
+           <div class="roller-with-character">${charHTML}${rollerContainerHTML}${char2HTML}</div>`
         : `<div class="roller-title">${title}</div>${rollerContainerHTML}`
       document.body.appendChild(ov)
       resolveAllImages(ov)
@@ -1408,7 +1415,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
         const target = others[Math.floor(Math.random() * others.length)]
         await showSystemEventResult(sysEvent, `准备从 ${target.name} 身上抽取金币！`)
         
-        const ev = await showRoller(`从 ${target.name} 抽取金币...`, STEAL_COIN_EVENTS, 6, target)
+        const ev = await showRoller(`从 ${target.name} 抽取金币...`, STEAL_COIN_EVENTS, 6, p, target)
         
         if (ev) {
           const amount = ev.amount
@@ -1444,7 +1451,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
       // 随机事件格子 → 仅从用户自定义事件中抽取
       setHint('随机事件触发！')
       playEventTrigger()  // 🔊 事件触发音效
-      const ev = await showRoller('❗ 随机事件抽取中...', events, Math.min(6, events.length))
+      const ev = await showRoller('❗ 随机事件抽取中...', events, Math.min(6, events.length), p)
       if (ev) {
         p.eventLog.push({ category: 'event', name: ev.name, type: ev.type, icon: ev.icon })
         await showEventResult(ev)
@@ -1460,14 +1467,14 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
       // 系统事件格子 → 从5个系统事件中抽取
       setHint('⚡ 系统事件触发！')
       playSystemEvent()  // 🔊 系统事件音效
-      const ev = await showRoller('⚡ 系统事件抽取中...', SYSTEM_EVENTS, SYSTEM_EVENTS.length)
+      const ev = await showRoller('⚡ 系统事件抽取中...', SYSTEM_EVENTS, SYSTEM_EVENTS.length, p)
       if (ev) {
         await executeSystemEvent(pi, ev)
       }
     } else if (type === 'coin') {
       // 金币格子 → 滚动器抽取 -3 到 8 个金币
       setHint('💰 金币事件触发！')
-      const ev = await showRoller('💰 金币抽取中...', COIN_EVENTS, Math.min(6, COIN_EVENTS.length))
+      const ev = await showRoller('💰 金币抽取中...', COIN_EVENTS, Math.min(6, COIN_EVENTS.length), p)
       if (ev) {
         const coinChange = ev.amount
         p.coins += coinChange
@@ -1488,7 +1495,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
       const title = targetNpc ? `👥 与${targetNpc.name}互动中...` : '👥 NPC事件抽取中...'
       setHint('NPC事件触发！')
       playNpcEncounter()  // 🔊 NPC遭遇音效
-      const ev = await showRoller(title, npcEvents, 6, targetNpc)
+      const ev = await showRoller(title, npcEvents, 6, targetNpc, p)
       if (ev) {
         p.eventLog.push({ category: 'npc', name: ev.name, type: ev.type, icon: ev.icon, npcName: targetNpc ? targetNpc.name : '' })
         await showEventResult(ev)
@@ -1539,6 +1546,13 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
           <div class="roller-items" id="mg-track">
             ${all.map(it => `<div class="roller-item"><img src="${it.icon}"/><span class="item-label">${it.name}</span></div>`).join('')}
           </div>
+        </div>
+        <div class="mg-players-row">
+          ${players.map(p => `
+            <div class="mg-player-item">
+              <div class="mg-player-avatar" style="border-color:${p.color}"><img src="${p.avatar}"/></div>
+              <div class="mg-player-name" style="color:${p.color}">${p.name}</div>
+            </div>`).join('')}
         </div>`
       document.body.appendChild(ov)
       resolveAllImages(ov)
