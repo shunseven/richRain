@@ -990,18 +990,33 @@ body {
 }
 
 .game-info-panel .player-stats .stat {
-  font-size: 0.9em;
+  font-size: 1em;
   color: rgba(255,255,255,0.85);
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.game-info-panel .player-stats .stat .star {
+  color: #ffec44;
+  font-size: 1.15em;
+  font-weight: bold;
+  text-shadow: 0 0 8px rgba(255,236,68,0.6), 0 0 16px rgba(255,215,0,0.3);
+  background: rgba(255,215,0,0.12);
+  padding: 2px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,215,0,0.25);
 }
 
 .game-info-panel .player-stats .stat .coin {
   color: #ffd700;
-  text-shadow: 0 0 6px rgba(255,215,0,0.4);
-}
-
-.game-info-panel .player-stats .stat .star {
-  color: #ff6b6b;
-  text-shadow: 0 0 6px rgba(255,107,107,0.4);
+  font-size: 1.15em;
+  font-weight: bold;
+  text-shadow: 0 0 8px rgba(255,215,0,0.6), 0 0 16px rgba(255,215,0,0.3);
+  background: rgba(255,215,0,0.12);
+  padding: 2px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,215,0,0.25);
 }
 
 /* 提示文字 - 喜庆风格 */
@@ -1924,6 +1939,34 @@ body {
 .all-players-panel .ap-avatar img {
   width: 100%;
   height: 100%;
+}
+
+.all-players-panel .ap-stats {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.all-players-panel .ap-star {
+  color: #ffec44;
+  font-weight: bold;
+  font-size: 0.95em;
+  text-shadow: 0 0 6px rgba(255,236,68,0.5);
+  background: rgba(255,215,0,0.15);
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,215,0,0.25);
+}
+
+.all-players-panel .ap-coin {
+  color: #ffd700;
+  font-weight: bold;
+  font-size: 0.95em;
+  text-shadow: 0 0 6px rgba(255,215,0,0.5);
+  background: rgba(255,215,0,0.15);
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,215,0,0.25);
 }
 
 /* 图标选择器 */

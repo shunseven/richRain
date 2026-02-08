@@ -846,7 +846,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
         <div class="player-avatar"><img src="${p.avatar}"/></div>
         <div class="player-stats">
           <div class="player-name" style="color:${p.color}">${p.name}</div>
-          <div class="stat"><span class="coin">💰 ${p.coins}</span> &nbsp; <span class="star">⭐ ${p.stars}</span></div>
+          <div class="stat"><span class="star">⭐ ${p.stars}</span> <span class="coin">💰 ${p.coins}</span></div>
         </div>
       </div>`
     resolveAllImages(infoEl)
@@ -869,7 +869,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
           <span class="ap-rank">${sortIdx < 3 ? rankIcons[sortIdx] : `<span class="ap-rank-num">${sortIdx + 1}</span>`}</span>
           <div class="ap-avatar"><img src="${p.avatar}"/></div>
           <span>${p.name}</span>
-          <span style="margin-left:auto">💰${p.coins} ⭐${p.stars}</span>
+          <span class="ap-stats" style="margin-left:auto"><span class="ap-star">⭐ ${p.stars}</span> <span class="ap-coin">💰 ${p.coins}</span></span>
         </div>`).join('')}`
     resolveAllImages(panelEl)
   }
