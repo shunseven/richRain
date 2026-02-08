@@ -48,6 +48,10 @@ function showModal(container, title, fields, data, onSave, onCancel) {
     if (f.type === 'avatar-upload') {
       return `<div class="form-group"><label>${f.label}</label><div class="avatar-upload-area"><div class="icon-preview-small" id="icon-preview-${f.key}"><img src="${val}" alt="头像"/></div><div class="avatar-upload-btns"><label class="btn-upload" for="upload-${f.key}">📁 上传头像</label><button type="button" class="btn-avatar-reset" data-field="${f.key}">🔄 恢复默认</button></div><input type="file" id="upload-${f.key}" data-field="${f.key}" data-preview="icon-preview-${f.key}" class="file-upload-input" accept="image/*" style="display:none"/><input type="hidden" name="${f.key}" value="${val}"/></div></div>`
     }
+    if (f.type === 'checkbox') {
+      const checked = data[f.key] === true || data[f.key] === 'true'
+      return `<div class="form-group" style="display:flex;align-items:center;gap:10px"><label style="margin:0;cursor:pointer;display:flex;align-items:center;gap:8px"><input type="checkbox" name="${f.key}" ${checked ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer"/> ${f.label}</label></div>`
+    }
     return `<div class="form-group"><label>${f.label}</label><input type="text" name="${f.key}" value="${val}"/></div>`
   }).join('')
 
@@ -138,7 +142,13 @@ function showModal(container, title, fields, data, onSave, onCancel) {
     fields.forEach(f => {
       const el = overlay.querySelector(`[name="${f.key}"]`)
       if (el) {
-        formData[f.key] = f.type === 'number' ? parseInt(el.value) || 0 : el.value
+        if (f.type === 'checkbox') {
+          formData[f.key] = el.checked
+        } else if (f.type === 'number') {
+          formData[f.key] = parseInt(el.value) || 0
+        } else {
+          formData[f.key] = el.value
+        }
       }
     })
     overlay.remove()
@@ -301,7 +311,7 @@ export function showMiniGameEditor(container, navigate) {
       <div class="item-card">
         <div class="icon-preview"><img src="${g.icon}" alt="${g.name}"/></div>
         <div class="item-name">${g.name}</div>
-        <div class="item-info">概率: ${g.probability}% | 次数: ${g.maxCount}</div>
+        <div class="item-info">概率: ${g.probability}% | 次数: ${g.maxCount}${g.guaranteeFirst ? ' | ✅ 至少一次' : ''}</div>
         <div class="item-info" style="color:#00cec9">${g.winCondition}</div>
         <div class="item-actions">
           <button class="btn-edit" data-id="${g.id}">编辑</button>
@@ -342,13 +352,15 @@ export function showMiniGameEditor(container, navigate) {
       { key: 'probability', label: '出现概率 (1-100)', type: 'number', min: 1, max: 100, default: 50 },
       { key: 'maxCount', label: '最大出现次数', type: 'number', min: 1, max: 999, default: 100 },
       { key: 'winCondition', label: '胜利条件', type: 'text' },
+      { key: 'guaranteeFirst', label: '至少触发一次（首次概率100%）', type: 'checkbox' },
     ], data, onSave)
   }
 
   addBtn.addEventListener('click', () => {
-    showGameModal({ probability: 50, maxCount: 100, icon: '' }, (data) => {
+    showGameModal({ probability: 50, maxCount: 100, icon: '', guaranteeFirst: false }, (data) => {
       if (!data.name) { alert('请输入游戏名称'); return }
       data.remainingCount = data.maxCount
+      data.hasTriggered = false
       store.addMiniGame(data)
       render()
     })

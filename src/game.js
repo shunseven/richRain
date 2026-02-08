@@ -1107,24 +1107,37 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
   // ===== 小游戏选择逻辑 =====
   function selectMiniGame() {
     const games = store.getMiniGames()
-    // 优先选概率100且剩余次数>0的
-    const p100 = games.filter(g => g.probability === 100 && g.remainingCount > 0)
     let selected
-    if (p100.length > 0) {
-      selected = p100[Math.floor(Math.random() * p100.length)]
+
+    // 1. 最优先：guaranteeFirst=true 且尚未触发过的游戏（首次概率100%）
+    const guaranteeGames = games.filter(g => g.guaranteeFirst && !g.hasTriggered && g.remainingCount > 0)
+    if (guaranteeGames.length > 0) {
+      selected = guaranteeGames[Math.floor(Math.random() * guaranteeGames.length)]
     } else {
-      const avail = games.filter(g => g.remainingCount > 0)
-      if (avail.length === 0) {
-        selected = games[Math.floor(Math.random() * games.length)]
-        return { selected, games }
+      // 2. 其次：概率100%且剩余次数>0的
+      const p100 = games.filter(g => g.probability === 100 && g.remainingCount > 0)
+      if (p100.length > 0) {
+        selected = p100[Math.floor(Math.random() * p100.length)]
+      } else {
+        const avail = games.filter(g => g.remainingCount > 0)
+        if (avail.length === 0) {
+          selected = games[Math.floor(Math.random() * games.length)]
+          return { selected, games }
+        }
+        // 加权随机
+        const tw = avail.reduce((s, g) => s + g.probability, 0)
+        let r = Math.random() * tw
+        selected = avail[0]
+        for (const g of avail) { r -= g.probability; if (r <= 0) { selected = g; break } }
       }
-      // 加权随机
-      const tw = avail.reduce((s, g) => s + g.probability, 0)
-      let r = Math.random() * tw
-      selected = avail[0]
-      for (const g of avail) { r -= g.probability; if (r <= 0) { selected = g; break } }
     }
-    store.updateMiniGame(selected.id, { remainingCount: Math.max(0, selected.remainingCount - 1) })
+
+    // 更新：减少剩余次数，并标记已触发（用于 guaranteeFirst）
+    const updateData = { remainingCount: Math.max(0, selected.remainingCount - 1) }
+    if (selected.guaranteeFirst && !selected.hasTriggered) {
+      updateData.hasTriggered = true
+    }
+    store.updateMiniGame(selected.id, updateData)
     return { selected, games }
   }
 
