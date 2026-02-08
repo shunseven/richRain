@@ -85,6 +85,7 @@ const SYSTEM_EVENTS = [
   { id: 'sys_random_pos', name: '🎲 跳到随机位置', emoji: '🎲', icon: _sysIcon('🎲'), description: '随机传送到棋盘任意位置！', color: '#00cec9' },
   { id: 'sys_steal_coins', name: '🕵️ 抽取金币', emoji: '🕵️', icon: _sysIcon('🕵️'), description: '从随机角色身上抽取金币！', color: '#e67e22' },
   { id: 'sys_star_price_up', name: '📈 星星涨价', emoji: '📈', icon: _sysIcon('📈'), description: '场上所有星星价格上涨5金币！', color: '#ff6348' },
+  { id: 'sys_star_price_down', name: '📉 星星降价', emoji: '📉', icon: _sysIcon('📉'), description: '场上所有星星价格下降5金币！', color: '#2ed573' },
   { id: 'sys_add_star', name: '🌟 额外星星', emoji: '🌟', icon: _sysIcon('🌟'), description: '场上出现第二颗星星！', color: '#f9ca24' },
 ]
 
@@ -586,12 +587,13 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
 
   // ===== 更新星星价格标签 =====
   function updateStarPriceLabels() {
-    const priceText = `${starPrice}💰`
+    const priceText = starPrice <= 0 ? '免费⭐' : `${starPrice}💰`
     const isInflated = starPrice > 10
+    const isDiscounted = starPrice < 10
     starLabel.text = priceText
-    starLabel.fill = isInflated ? '#ff6348' : '#ffd700'
+    starLabel.fill = isInflated ? '#ff6348' : isDiscounted ? '#2ed573' : '#ffd700'
     star2Label.text = priceText
-    star2Label.fill = isInflated ? '#ff6348' : '#ff6b6b'
+    star2Label.fill = isInflated ? '#ff6348' : isDiscounted ? '#2ed573' : '#ff6b6b'
   }
 
   // ===== 星星综合动画 =====
@@ -1504,6 +1506,13 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
         await showSystemEventResult(sysEvent, `星星价格从 ${oldPrice}💰 涨到了 ${starPrice}💰！${starPrice >= 20 ? '（已达上限）' : ''}`)
         break
       }
+      case 'sys_star_price_down': {
+        const oldPrice = starPrice
+        starPrice = Math.max(starPrice - 5, 0)
+        updateStarPriceLabels()
+        await showSystemEventResult(sysEvent, `星星价格从 ${oldPrice}💰 降到了 ${starPrice}💰！${starPrice <= 0 ? '（免费星星！）' : ''}`)
+        break
+      }
       case 'sys_add_star': {
         if (star2Active) {
           await showSystemEventResult(sysEvent, '场上已经有两颗星星了！')
@@ -1578,6 +1587,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
       // 系统事件格子 → 从系统事件中抽取（条件过滤不可用事件）
       const availSysEvents = SYSTEM_EVENTS.filter(e => {
         if (e.id === 'sys_star_price_up' && starPrice >= 20) return false
+        if (e.id === 'sys_star_price_down' && starPrice <= 0) return false
         if (e.id === 'sys_add_star' && star2Active) return false
         return true
       })
