@@ -26,7 +26,9 @@ body {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background: url('/start-bg.png') center/cover no-repeat;
+  /* 叠加一层红色渐变，让紫色背景更偏向新春红，同时保留原图纹理 */
+  background: linear-gradient(135deg, rgba(200, 50, 50, 0.2), rgba(100, 0, 0, 0.5)), url('/start-bg.png') center/cover no-repeat;
+  background-blend-mode: overlay, normal;
   position: relative;
   overflow: hidden;
 }
@@ -99,13 +101,15 @@ body {
 }
 
 .menu-subtitle {
-  font-size: 1.5em;
-  color: #ffda79;
+  font-size: 1.6em;
+  font-weight: bold;
+  color: #ffeaa7;
   margin-bottom: 40px;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  filter: drop-shadow(0 0 10px rgba(255, 100, 100, 0.5));
   position: relative;
   z-index: 1;
-  letter-spacing: 2px;
+  letter-spacing: 4px;
 }
 
 .clear-cache-btn {
