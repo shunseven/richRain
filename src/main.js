@@ -37,6 +37,11 @@ function showMenu() {
 
   app.innerHTML = `
     <div class="menu-screen">
+      <video id="bg-video" class="bg-video" autoplay loop muted playsinline>
+        <source src="/start-bg.mp4" type="video/mp4">
+      </video>
+      <div class="menu-overlay"></div>
+      <div class="volume-control" id="btn-volume" title="开启/关闭声音">🔇</div>
       <button class="clear-cache-btn" id="btn-clear-cache">恢复默认数据</button>
       <div class="menu-super-title">🧧 红包雨3.0 🧧</div>
       <div class="menu-title">🎉 新春派对大富翁 🎉</div>
@@ -97,6 +102,18 @@ function showMenu() {
     })
   })
 
+  // 音量控制
+  const video = document.getElementById('bg-video')
+  const volBtn = document.getElementById('btn-volume')
+  if (video && volBtn) {
+    // 尝试从 localStorage 读取之前的静音状态，但在自动播放策略下，默认还是先 mute 比较安全，
+    // 这里我们只在用户点击时切换
+    volBtn.addEventListener('click', () => {
+      video.muted = !video.muted
+      volBtn.textContent = video.muted ? '🔇' : '🔊'
+    })
+  }
+
   const clearBtn = document.getElementById('btn-clear-cache')
   if (clearBtn) {
     clearBtn.addEventListener('click', () => {
@@ -114,6 +131,10 @@ function showMenu() {
 function showRoundSetup() {
   app.innerHTML = `
     <div class="round-setup">
+      <video id="bg-video" class="bg-video" autoplay loop muted playsinline>
+        <source src="/start-bg.mp4" type="video/mp4">
+      </video>
+      <div class="volume-control" id="btn-volume" title="开启/关闭声音">🔇</div>
       <div class="round-setup-card">
         <h2>🎲 设置游戏轮数</h2>
         <input type="number" id="round-input" min="1" max="50" value="10" />
@@ -161,6 +182,16 @@ function showRoundSetup() {
   document.getElementById('btn-back-menu').addEventListener('click', () => {
     navigate('menu')
   })
+
+  // 音量控制
+  const video = document.getElementById('bg-video')
+  const volBtn = document.getElementById('btn-volume')
+  if (video && volBtn) {
+    volBtn.addEventListener('click', () => {
+      video.muted = !video.muted
+      volBtn.textContent = video.muted ? '🔇' : '🔊'
+    })
+  }
 }
 
 // ===== 结果界面 =====

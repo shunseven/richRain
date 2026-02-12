@@ -26,11 +26,20 @@ body {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  /* 叠加一层红色渐变，让紫色背景更偏向新春红，同时保留原图纹理 */
-  background: linear-gradient(135deg, rgba(200, 50, 50, 0.2), rgba(100, 0, 0, 0.5)), url('/start-bg.png') center/cover no-repeat;
-  background-blend-mode: overlay, normal;
+  /* 背景由 video 和 overlay 组成 */
+  background: none;
   position: relative;
   overflow: hidden;
+}
+
+.bg-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
 }
 
 .menu-screen::before {
@@ -43,6 +52,7 @@ body {
   background: radial-gradient(circle, rgba(255,215,0,0.06) 1px, transparent 1px);
   background-size: 50px 50px;
   animation: twinkle 3s ease-in-out infinite;
+  z-index: 2;
 }
 
 .menu-screen::after {
@@ -54,9 +64,34 @@ body {
   text-align: center;
   font-size: 36px;
   animation: lanternSwingMenu 3s ease-in-out infinite;
-  z-index: 1;
+  z-index: 2;
   pointer-events: none;
   letter-spacing: 20px;
+}
+
+.volume-control {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid rgba(255, 215, 0, 0.5);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  color: #ffd700;
+  font-size: 20px;
+}
+
+.volume-control:hover {
+  background: rgba(0, 0, 0, 0.8);
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
 }
 
 @keyframes lanternSwingMenu {
@@ -147,7 +182,7 @@ body {
   max-width: 500px;
   width: 90%;
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .menu-btn {
@@ -498,7 +533,8 @@ body {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background: url('/start-bg.png') center/cover no-repeat;
+  position: relative;
+  overflow: hidden;
 }
 
 .round-setup-card {
@@ -511,6 +547,8 @@ body {
   border: 1px solid rgba(255, 215, 0, 0.3);
   border-radius: 24px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4), inset 0 0 20px rgba(139, 0, 0, 0.2);
+  position: relative;
+  z-index: 1;
 }
 
 .round-setup h2 {
