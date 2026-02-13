@@ -194,7 +194,47 @@ function showRoundSetup() {
       return
     }
     store.clearGameProgress()  // 开始新游戏时清除旧存档
-    navigate('game', { rounds, diceMode })
+    
+    // 隐藏UI并显示加载中
+    app.innerHTML = `
+      <div style="
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        width: 100vw;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 100;
+        color: #ffd700;
+        font-size: 32px;
+        font-weight: bold;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+        letter-spacing: 4px;
+      ">
+        游戏加载中...
+      </div>
+    `
+    
+    // 播放过渡视频
+    bgVideo.src = '/before-start.mp4'
+    bgVideo.loop = false
+    bgVideo.style.display = 'block'
+    // 确保视频静音状态符合用户设置，或者强制开启声音（如果需要）
+    // 这里保持用户当前的静音设置
+    
+    bgVideo.play().catch(e => {
+      console.warn('Video play failed:', e)
+      // 如果视频播放失败，直接进入游戏
+      navigate('game', { rounds, diceMode })
+    })
+
+    const onVideoEnd = () => {
+      bgVideo.removeEventListener('ended', onVideoEnd)
+      navigate('game', { rounds, diceMode })
+    }
+    bgVideo.addEventListener('ended', onVideoEnd)
   })
 
   document.getElementById('btn-back-menu').addEventListener('click', () => {
