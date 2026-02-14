@@ -86,7 +86,7 @@ const SYSTEM_EVENTS = [
   { id: 'sys_steal_coins', name: '🕵️ 抽取金币', emoji: '🕵️', icon: _sysIcon('🕵️'), description: '从随机角色身上抽取金币！', color: '#e67e22' },
   { id: 'sys_star_price_up', name: '📈 星星涨价', emoji: '📈', icon: _sysIcon('📈'), description: '场上所有星星价格上涨5金币！', color: '#ff6348' },
   { id: 'sys_star_price_down', name: '📉 星星降价', emoji: '📉', icon: _sysIcon('📉'), description: '场上所有星星价格下降5金币！', color: '#2ed573' },
-  { id: 'sys_add_star', name: '🌟 额外星星', emoji: '🌟', icon: _sysIcon('🌟'), description: '场上出现第二颗星星！', color: '#f9ca24' },
+  { id: 'sys_add_star', name: '🌟 额外星星', emoji: '🌟', icon: _sysIcon('🌟'), description: '场上多出一颗一次性星星！', color: '#f9ca24' },
   { id: 'sys_get_coin', name: '💰 获得一个金币', emoji: '💰', icon: _sysIcon('💰'), description: '获得一个金币！', color: '#f1c40f' },
 ]
 
@@ -205,9 +205,6 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
     totalRounds = savedState.totalRounds
     diceMode = savedState.diceMode
   }
-  // 星星初始位置 - 随机放在任意格子上
-  let starPos = savedState ? savedState.starPos : Math.floor(Math.random() * BOARD_SIZE)
-
   // 星星价格（可涨价，购买后恢复原价10）
   let starPrice = savedState ? (savedState.starPrice || 10) : 10
 
@@ -215,9 +212,10 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
   let bonusRedPacket = savedState ? (savedState.bonusRedPacket || 0) : 0
 
   // 最后三轮状态
-  let starPos2 = savedState ? savedState.starPos2 : -1           // 第二颗星位置 (-1 = 未激活)
-  let star2Active = savedState ? savedState.star2Active : false     // 第二颗星是否激活
   let isLastThreeRounds = savedState ? savedState.isLastThreeRounds : false
+
+  // 星星管理：支持不限数量，type: 'permanent'(永久,收集后换位) 或 'onetime'(一次性,收集后消失)
+  const stars = []
 
   // === 保存游戏进度的辅助函数 ===
   function saveProgress() {
@@ -227,9 +225,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
       currentPI,
       totalRounds,
       diceMode,
-      starPos,
-      starPos2,
-      star2Active,
+      starsData: stars.map(s => ({ position: s.position, type: s.type })),
       isLastThreeRounds,
       starPrice,
       bonusRedPacket,
@@ -480,47 +476,127 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
   })
   resolveAllImages(avatarOverlay)
 
-  // ===== 星星标记 - 华丽动画版 =====
+  // ===== 星星系统 - 工厂函数 + 对象池（性能优化版） =====
   const STAR_SIZE = 56
-  // 记录星星格子中心坐标（用于动画偏移计算）
-  let starBaseX = tilePos[starPos].x, starBaseY = tilePos[starPos].y
-  const starCX = () => starBaseX + TILE_W / 2
-  const starCY = () => starBaseY + TILE_W / 2
+  const STAR_FONT = 40
 
-  // ① 外层大光晕（x,y 为左上角）
-  const starGlowOuter = new Ellipse({
-    x: starCX() - STAR_SIZE * 0.75,
-    y: starCY() - STAR_SIZE * 0.75 - 20,
-    width: STAR_SIZE * 1.5, height: STAR_SIZE * 1.5,
-    fill: { type: 'radial', stops: [
-      { offset: 0, color: 'rgba(255,215,0,0.35)' },
-      { offset: 0.5, color: 'rgba(255,215,0,0.12)' },
-      { offset: 1, color: 'rgba(255,215,0,0)' },
-    ]},
-    shadow: { x: 0, y: 0, blur: 25, color: 'rgba(255,215,0,0.5)' },
-  })
-  leafer.add(starGlowOuter)
+  // 创建一颗星星（最小化视觉元素：仅4个 LeaferJS 对象）
+  function createStar(position, type = 'permanent') {
+    const pos = tilePos[position]
+    const cx = pos.x + TILE_W / 2
+    const cy = pos.y + TILE_W / 2
+    const isPermanent = type === 'permanent'
+    const glowColor = isPermanent ? '255,215,0' : '120,200,255'
 
-  // ② 内层光圈
-  const starGlowInner = new Ellipse({
-    x: starCX() - STAR_SIZE * 0.5,
-    y: starCY() - STAR_SIZE * 0.5 - 20,
-    width: STAR_SIZE, height: STAR_SIZE,
-    fill: { type: 'radial', stops: [
-      { offset: 0, color: 'rgba(255,235,100,0.45)' },
-      { offset: 0.6, color: 'rgba(255,215,0,0.15)' },
-      { offset: 1, color: 'rgba(255,215,0,0)' },
-    ]},
-  })
-  leafer.add(starGlowInner)
+    // ① 外层大光晕
+    const glowOuter = new Ellipse({
+      x: cx - STAR_SIZE * 0.75, y: cy - STAR_SIZE * 0.75 - 20,
+      width: STAR_SIZE * 1.5, height: STAR_SIZE * 1.5,
+      fill: { type: 'radial', stops: [
+        { offset: 0, color: `rgba(${glowColor},0.35)` },
+        { offset: 0.5, color: `rgba(${glowColor},0.12)` },
+        { offset: 1, color: `rgba(${glowColor},0)` },
+      ]},
+      shadow: { x: 0, y: 0, blur: 25, color: `rgba(${glowColor},0.5)` },
+    })
+    leafer.add(glowOuter)
 
-  // ③ 环绕光点（8颗小星光围绕星星旋转）
+    // ② 内层光圈
+    const glowInner = new Ellipse({
+      x: cx - STAR_SIZE * 0.5, y: cy - STAR_SIZE * 0.5 - 20,
+      width: STAR_SIZE, height: STAR_SIZE,
+      fill: { type: 'radial', stops: [
+        { offset: 0, color: `rgba(${glowColor},0.45)` },
+        { offset: 0.6, color: `rgba(${glowColor},0.15)` },
+        { offset: 1, color: `rgba(${glowColor},0)` },
+      ]},
+    })
+    leafer.add(glowInner)
+
+    // ③ 星星 emoji（永久用⭐，一次性用🌟区分）
+    const text = new Text({
+      x: pos.x, y: cy - STAR_FONT / 2 - 30,
+      width: TILE_W, text: isPermanent ? '⭐' : '🌟', fontSize: STAR_FONT, textAlign: 'center',
+    })
+    leafer.add(text)
+
+    // ④ 价格标签
+    const priceColor = isPermanent
+      ? (starPrice > 10 ? '#ff6348' : '#ffd700')
+      : (starPrice > 10 ? '#ff6348' : '#74b9ff')
+    const label = new Text({
+      x: pos.x, y: cy + STAR_FONT / 2 - 8,
+      width: TILE_W, text: starPrice <= 0 ? '免费⭐' : `${starPrice}💰`,
+      fill: priceColor, fontSize: 14, fontWeight: 'bold', textAlign: 'center',
+    })
+    leafer.add(label)
+
+    const star = { position, type, elements: { glowOuter, glowInner, text, label } }
+    stars.push(star)
+    return star
+  }
+
+  // 移除一颗星星（一次性星星收集后调用）
+  function removeStar(star) {
+    star.elements.glowOuter.remove()
+    star.elements.glowInner.remove()
+    star.elements.text.remove()
+    star.elements.label.remove()
+    const idx = stars.indexOf(star)
+    if (idx >= 0) stars.splice(idx, 1)
+  }
+
+  // 更新星星视觉位置
+  function updateStarPosition(star) {
+    const pos = tilePos[star.position]
+    const cx = pos.x + TILE_W / 2
+    const cy = pos.y + TILE_W / 2
+    star.elements.glowOuter.x = cx - STAR_SIZE * 0.75
+    star.elements.glowOuter.y = cy - STAR_SIZE * 0.75 - 20
+    star.elements.glowInner.x = cx - STAR_SIZE * 0.5
+    star.elements.glowInner.y = cy - STAR_SIZE * 0.5 - 20
+    star.elements.text.x = pos.x
+    star.elements.text.y = cy - STAR_FONT / 2 - 30
+    star.elements.label.x = pos.x
+    star.elements.label.y = cy + STAR_FONT / 2 - 8
+  }
+
+  // 移动星星到随机新位置（排除其他星星位置）
+  function moveStarToRandom(star) {
+    const occupied = new Set(stars.map(s => s.position))
+    const candidates = []
+    for (let i = 0; i < BOARD_SIZE; i++) {
+      if (!occupied.has(i)) candidates.push(i)
+    }
+    if (candidates.length === 0) return
+    star.position = candidates[Math.floor(Math.random() * candidates.length)]
+    updateStarPosition(star)
+  }
+
+  // 获取指定位置的星星
+  function getStarsAtPosition(pos) {
+    return stars.filter(s => s.position === pos)
+  }
+
+  // 查找距离玩家最近的星星
+  function findNearestStar(playerPos) {
+    if (stars.length === 0) return null
+    let nearest = stars[0]
+    let minDist = ((stars[0].position - playerPos) + BOARD_SIZE) % BOARD_SIZE
+    for (const s of stars) {
+      const dist = ((s.position - playerPos) + BOARD_SIZE) % BOARD_SIZE
+      if (dist < minDist) { minDist = dist; nearest = s }
+    }
+    return nearest
+  }
+
+  // 共享装饰效果（环绕光点 + 闪烁粒子 - 仅围绕第一颗永久星星，不随星星数量增长）
   const SPARKLE_COUNT = 8
   const SPARKLE_ORBIT = 38
   const sparkles = []
   for (let i = 0; i < SPARKLE_COUNT; i++) {
     const s = new Ellipse({
-      x: 0, y: 0, width: 5, height: 5,
+      x: -100, y: -100, width: 5, height: 5,
       fill: i % 2 === 0 ? 'rgba(255,235,120,0.9)' : 'rgba(255,200,50,0.7)',
       shadow: { x: 0, y: 0, blur: 6, color: 'rgba(255,215,0,0.6)' },
     })
@@ -528,12 +604,11 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
     sparkles.push(s)
   }
 
-  // ④ 闪烁粒子（随机飘出的小星星）
   const TWINKLE_COUNT = 6
   const twinkles = []
   for (let i = 0; i < TWINKLE_COUNT; i++) {
     const t = new Text({
-      x: 0, y: 0, text: '✦', fontSize: 8 + Math.random() * 6,
+      x: -100, y: -100, text: '✦', fontSize: 8 + Math.random() * 6,
       fill: `rgba(255,${200 + Math.floor(Math.random() * 55)},${50 + Math.floor(Math.random() * 100)},0.8)`,
       opacity: 0,
     })
@@ -548,209 +623,107 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
     })
   }
 
-  // ⑤ 星星emoji - 居中在格子内（textAlign居中，y偏移让星星视觉居中）
-  const STAR_FONT = 40
-  const starText = new Text({
-    x: starBaseX, y: starCY() - STAR_FONT / 2 - 30,
-    width: TILE_W, text: '⭐', fontSize: STAR_FONT, textAlign: 'center',
-  })
-  leafer.add(starText)
+  // 初始化星星（从存档恢复或新建）
+  if (savedState && savedState.starsData) {
+    savedState.starsData.forEach(s => createStar(s.position, s.type))
+  } else if (savedState) {
+    // 兼容旧存档格式
+    if (savedState.starPos >= 0) createStar(savedState.starPos, 'permanent')
+    if (savedState.star2Active && savedState.starPos2 >= 0) createStar(savedState.starPos2, 'permanent')
+  } else {
+    createStar(Math.floor(Math.random() * BOARD_SIZE), 'permanent')
+  }
 
-  // ⑥ 价格标签 - 在星星下方
-  const starLabel = new Text({
-    x: starBaseX, y: starCY() + STAR_FONT / 2 - 8,
-    width: TILE_W, text: `${starPrice}💰`, fill: starPrice > 10 ? '#ff6348' : '#ffd700', fontSize: 14,
-    fontWeight: 'bold', textAlign: 'center',
-  })
-  leafer.add(starLabel)
-
-  // ===== 第二颗星星视觉元素（最后三轮激活）=====
-  const star2GlowOuter = new Ellipse({
-    x: -200, y: -200, width: STAR_SIZE * 1.5, height: STAR_SIZE * 1.5,
-    fill: { type: 'radial', stops: [
-      { offset: 0, color: 'rgba(255,120,120,0.35)' },
-      { offset: 0.5, color: 'rgba(255,120,120,0.12)' },
-      { offset: 1, color: 'rgba(255,120,120,0)' },
-    ]},
-    shadow: { x: 0, y: 0, blur: 25, color: 'rgba(255,120,120,0.5)' },
-    opacity: 0,
-  })
-  leafer.add(star2GlowOuter)
-
-  const star2GlowInner = new Ellipse({
-    x: -200, y: -200, width: STAR_SIZE, height: STAR_SIZE,
-    fill: { type: 'radial', stops: [
-      { offset: 0, color: 'rgba(255,180,100,0.45)' },
-      { offset: 0.6, color: 'rgba(255,160,80,0.15)' },
-      { offset: 1, color: 'rgba(255,160,80,0)' },
-    ]},
-    opacity: 0,
-  })
-  leafer.add(star2GlowInner)
-
-  const star2Text = new Text({
-    x: -200, y: -200, width: TILE_W, text: '⭐', fontSize: STAR_FONT, textAlign: 'center',
-    opacity: 0,
-  })
-  leafer.add(star2Text)
-
-  const star2Label = new Text({
-    x: -200, y: -200, width: TILE_W, text: `${starPrice}💰`, fill: starPrice > 10 ? '#ff6348' : '#ff6b6b', fontSize: 14,
-    fontWeight: 'bold', textAlign: 'center', opacity: 0,
-  })
-  leafer.add(star2Label)
-
-  // ===== 更新星星价格标签 =====
+  // ===== 更新所有星星价格标签 =====
   function updateStarPriceLabels() {
     const priceText = starPrice <= 0 ? '免费⭐' : `${starPrice}💰`
     const isInflated = starPrice > 10
     const isDiscounted = starPrice < 10
-    starLabel.text = priceText
-    starLabel.fill = isInflated ? '#ff6348' : isDiscounted ? '#2ed573' : '#ffd700'
-    star2Label.text = priceText
-    star2Label.fill = isInflated ? '#ff6348' : isDiscounted ? '#2ed573' : '#ff6b6b'
+    for (const star of stars) {
+      star.elements.label.text = priceText
+      if (star.type === 'permanent') {
+        star.elements.label.fill = isInflated ? '#ff6348' : isDiscounted ? '#2ed573' : '#ffd700'
+      } else {
+        star.elements.label.fill = isInflated ? '#ff6348' : isDiscounted ? '#2ed573' : '#74b9ff'
+      }
+    }
   }
 
-  // ===== 星星综合动画 =====
+  // ===== 星星动画（优化版：单循环 + 共享装饰效果） =====
   let starAnimT = 0
   const starPulseTimer = setInterval(() => {
     starAnimT += 0.06
-    const cx = starCX()
-    const cy = starCY()
 
-    // --- 呼吸光晕（从中心缩放） ---
-    const pulse = Math.sin(starAnimT)
-    const outerScale = 1 + pulse * 0.15
-    const outerHalf = STAR_SIZE * 0.75
-    starGlowOuter.x = cx - outerHalf * outerScale
-    starGlowOuter.y = cy - outerHalf * outerScale - 20
-    starGlowOuter.width = STAR_SIZE * 1.5 * outerScale
-    starGlowOuter.height = STAR_SIZE * 1.5 * outerScale
+    // 更新所有星星的呼吸光晕和浮动（每颗仅 ~9 个属性更新）
+    for (let si = 0; si < stars.length; si++) {
+      const star = stars[si]
+      const pos = tilePos[star.position]
+      const cx = pos.x + TILE_W / 2
+      const cy = pos.y + TILE_W / 2
 
-    const innerScale = 1 + pulse * 0.08
-    const innerHalf = STAR_SIZE * 0.5
-    starGlowInner.x = cx - innerHalf * innerScale
-    starGlowInner.y = cy - innerHalf * innerScale - 20
-    starGlowInner.width = STAR_SIZE * innerScale
-    starGlowInner.height = STAR_SIZE * innerScale
+      const pulse = Math.sin(starAnimT + si * 0.5)
+      const outerScale = 1 + pulse * 0.15
+      const outerHalf = STAR_SIZE * 0.75
+      star.elements.glowOuter.x = cx - outerHalf * outerScale
+      star.elements.glowOuter.y = cy - outerHalf * outerScale - 20
+      star.elements.glowOuter.width = STAR_SIZE * 1.5 * outerScale
+      star.elements.glowOuter.height = STAR_SIZE * 1.5 * outerScale
 
-    // --- 星星上下浮动 ---
-    const floatY = Math.sin(starAnimT * 0.8) * 4
-    starText.y = cy - STAR_FONT / 2 - 30 + floatY
+      const innerScale = 1 + pulse * 0.08
+      const innerHalf = STAR_SIZE * 0.5
+      star.elements.glowInner.x = cx - innerHalf * innerScale
+      star.elements.glowInner.y = cy - innerHalf * innerScale - 20
+      star.elements.glowInner.width = STAR_SIZE * innerScale
+      star.elements.glowInner.height = STAR_SIZE * innerScale
 
-    // --- 环绕光点旋转 ---
-    for (let i = 0; i < SPARKLE_COUNT; i++) {
-      const baseAngle = (i / SPARKLE_COUNT) * Math.PI * 2
-      const angle = baseAngle + starAnimT * 0.8
-      const rx = SPARKLE_ORBIT + Math.sin(starAnimT * 1.5 + i) * 4
-      const ry = SPARKLE_ORBIT * 0.7 + Math.cos(starAnimT * 1.2 + i) * 3
-      sparkles[i].x = cx + Math.cos(angle) * rx - 2.5
-      sparkles[i].y = cy - 20 + Math.sin(angle) * ry - 2.5
-      sparkles[i].opacity = 0.4 + Math.sin(starAnimT * 3 + i * 1.5) * 0.4
-      const sz = 3 + Math.sin(starAnimT * 2 + i) * 2
-      sparkles[i].width = sz
-      sparkles[i].height = sz
+      const floatY = Math.sin(starAnimT * 0.8 + si * 0.5) * 4
+      star.elements.text.y = cy - STAR_FONT / 2 - 30 + floatY
     }
 
-    // --- 闪烁粒子飘散 ---
-    for (let i = 0; i < TWINKLE_COUNT; i++) {
-      const tw = twinkles[i]
-      tw.phase += 0.04
-      if (tw.phase > Math.PI * 2) {
-        tw.phase = 0
-        tw.angle = Math.random() * Math.PI * 2
-        tw.radius = 5 + Math.random() * 8
+    // 共享装饰效果：仅围绕第一颗永久星星（固定开销，不随星星数增长）
+    const primaryStar = stars.find(s => s.type === 'permanent')
+    if (primaryStar) {
+      const pos = tilePos[primaryStar.position]
+      const cx = pos.x + TILE_W / 2
+      const cy = pos.y + TILE_W / 2
+      const floatY = Math.sin(starAnimT * 0.8) * 4
+
+      for (let i = 0; i < SPARKLE_COUNT; i++) {
+        const baseAngle = (i / SPARKLE_COUNT) * Math.PI * 2
+        const angle = baseAngle + starAnimT * 0.8
+        const rx = SPARKLE_ORBIT + Math.sin(starAnimT * 1.5 + i) * 4
+        const ry = SPARKLE_ORBIT * 0.7 + Math.cos(starAnimT * 1.2 + i) * 3
+        sparkles[i].x = cx + Math.cos(angle) * rx - 2.5
+        sparkles[i].y = cy - 20 + Math.sin(angle) * ry - 2.5
+        sparkles[i].opacity = 0.4 + Math.sin(starAnimT * 3 + i * 1.5) * 0.4
+        const sz = 3 + Math.sin(starAnimT * 2 + i) * 2
+        sparkles[i].width = sz
+        sparkles[i].height = sz
       }
-      const progress = tw.phase / (Math.PI * 2)
-      const curR = tw.radius + progress * 35
-      tw.el.x = cx + Math.cos(tw.angle + progress * 0.5) * curR - 5
-      tw.el.y = cy - 20 + Math.sin(tw.angle + progress * 0.5) * curR - 5 + floatY * 0.3
-      tw.el.opacity = progress < 0.2 ? progress / 0.2 * 0.8 : (1 - progress) * 0.8
-      tw.el.rotation = progress * 180
-      const pScale = progress < 0.3 ? 1 : 1 - (progress - 0.3) * 0.7
-      tw.el.scaleX = pScale
-      tw.el.scaleY = pScale
-    }
 
-    // --- 第二颗星星动画 ---
-    if (star2Active && starPos2 >= 0) {
-      const cx2 = tilePos[starPos2].x + TILE_W / 2
-      const cy2 = tilePos[starPos2].y + TILE_W / 2
-      const floatY2 = Math.sin(starAnimT * 0.8 + 1) * 4
-
-      // 呼吸光晕
-      const pulse2 = Math.sin(starAnimT + 0.5)
-      const outer2Scale = 1 + pulse2 * 0.15
-      const outer2Half = STAR_SIZE * 0.75
-      star2GlowOuter.x = cx2 - outer2Half * outer2Scale
-      star2GlowOuter.y = cy2 - outer2Half * outer2Scale - 20
-      star2GlowOuter.width = STAR_SIZE * 1.5 * outer2Scale
-      star2GlowOuter.height = STAR_SIZE * 1.5 * outer2Scale
-
-      const inner2Scale = 1 + pulse2 * 0.08
-      const inner2Half = STAR_SIZE * 0.5
-      star2GlowInner.x = cx2 - inner2Half * inner2Scale
-      star2GlowInner.y = cy2 - inner2Half * inner2Scale - 20
-      star2GlowInner.width = STAR_SIZE * inner2Scale
-      star2GlowInner.height = STAR_SIZE * inner2Scale
-
-      // 上下浮动
-      star2Text.y = cy2 - STAR_FONT / 2 - 30 + floatY2
+      for (let i = 0; i < TWINKLE_COUNT; i++) {
+        const tw = twinkles[i]
+        tw.phase += 0.04
+        if (tw.phase > Math.PI * 2) {
+          tw.phase = 0
+          tw.angle = Math.random() * Math.PI * 2
+          tw.radius = 5 + Math.random() * 8
+        }
+        const progress = tw.phase / (Math.PI * 2)
+        const curR = tw.radius + progress * 35
+        tw.el.x = cx + Math.cos(tw.angle + progress * 0.5) * curR - 5
+        tw.el.y = cy - 20 + Math.sin(tw.angle + progress * 0.5) * curR - 5 + floatY * 0.3
+        tw.el.opacity = progress < 0.2 ? progress / 0.2 * 0.8 : (1 - progress) * 0.8
+        tw.el.rotation = progress * 180
+        const pScale = progress < 0.3 ? 1 : 1 - (progress - 0.3) * 0.7
+        tw.el.scaleX = pScale
+        tw.el.scaleY = pScale
+      }
+    } else {
+      for (let i = 0; i < SPARKLE_COUNT; i++) sparkles[i].opacity = 0
+      for (let i = 0; i < TWINKLE_COUNT; i++) twinkles[i].el.opacity = 0
     }
   }, 50)
-
-  function moveStarElements(pos) {
-    starBaseX = pos.x; starBaseY = pos.y
-    const cx = starCX(), cy = starCY()
-    starGlowOuter.x = cx - STAR_SIZE * 0.75
-    starGlowOuter.y = cy - STAR_SIZE * 0.75 - 20
-    starGlowInner.x = cx - STAR_SIZE * 0.5
-    starGlowInner.y = cy - STAR_SIZE * 0.5 - 20
-    starText.x = pos.x; starText.y = cy - STAR_FONT / 2 - 30
-    starLabel.x = pos.x; starLabel.y = cy + STAR_FONT / 2 - 8
-  }
-
-  function moveStar() {
-    // 星星可以移动到任意格子（排除当前位置和第二颗星位置）
-    const candidates = []
-    for (let i = 0; i < BOARD_SIZE; i++) { if (i !== starPos && i !== starPos2) candidates.push(i) }
-    if (candidates.length === 0) return
-    starPos = candidates[Math.floor(Math.random() * candidates.length)]
-    moveStarElements(tilePos[starPos])
-  }
-
-  // ===== 第二颗星管理函数 =====
-  function moveStar2Elements(pos) {
-    if (!pos) return
-    const cx2 = pos.x + TILE_W / 2
-    const cy2 = pos.y + TILE_W / 2
-    star2GlowOuter.x = cx2 - STAR_SIZE * 0.75
-    star2GlowOuter.y = cy2 - STAR_SIZE * 0.75 - 20
-    star2GlowInner.x = cx2 - STAR_SIZE * 0.5
-    star2GlowInner.y = cy2 - STAR_SIZE * 0.5 - 20
-    star2Text.x = pos.x
-    star2Text.y = cy2 - STAR_FONT / 2 - 30
-    star2Label.x = pos.x
-    star2Label.y = cy2 + STAR_FONT / 2 - 8
-  }
-
-  function showStar2(pos) {
-    starPos2 = pos
-    star2Active = true
-    star2GlowOuter.opacity = 1
-    star2GlowInner.opacity = 1
-    star2Text.opacity = 1
-    star2Label.opacity = 1
-    moveStar2Elements(tilePos[pos])
-  }
-
-  function hideStar2() {
-    star2Active = false
-    star2GlowOuter.opacity = 0
-    star2GlowInner.opacity = 0
-    star2Text.opacity = 0
-    star2Label.opacity = 0
-  }
 
   // ===== 最后三轮弹窗（5秒后自动消失）=====
   function showLastThreeRoundsPopup() {
@@ -765,7 +738,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
             ⚡ 游戏进入冲刺阶段 ⚡
           </div>
           <div style="color:rgba(255,215,0,0.9);font-size:1.1em;margin:10px 0;line-height:2">
-            ⭐ 场上将出现两颗星星<br/>
+            ⭐ 场上将新增一颗永久星星<br/>
             🎵 决战BGM启动！
           </div>
           <div class="continue-hint" style="margin-top:25px;opacity:0.6">5秒后自动关闭...</div>
@@ -806,11 +779,12 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
     await showLastThreeRoundsPopup()
     // 加速BGM
     speedUpBGM()
-    // 激活第二颗星星（固定在场上）
+    // 新增一颗永久星星（排除已有星星位置）
+    const occupied = new Set(stars.map(s => s.position))
     const candidates = []
-    for (let i = 0; i < BOARD_SIZE; i++) { if (i !== starPos) candidates.push(i) }
+    for (let i = 0; i < BOARD_SIZE; i++) { if (!occupied.has(i)) candidates.push(i) }
     if (candidates.length > 0) {
-      showStar2(candidates[Math.floor(Math.random() * candidates.length)])
+      createStar(candidates[Math.floor(Math.random() * candidates.length)], 'permanent')
     }
   }
 
@@ -1393,36 +1367,25 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
       updateInfoPanel()
       playStep()  // 🔊 移动一步音效
       await sleep(350)
-      // 检查星星1
-      if (p.position === starPos && p.coins >= starPrice) {
-        const cost = starPrice
-        p.coins -= cost; p.stars++
-        starPrice = 10  // 购买后恢复原价
-        updateStarPriceLabels()
-        updateInfoPanel(); updatePlayersPanel()
-        await showStarPopup(p, cost)
-        moveStar()
-      } else if (p.position === starPos && p.coins < starPrice) {
-        await showNotEnoughCoins(p, starPrice)
-      }
-      // 检查星星2（最后三轮激活）
-      if (star2Active && p.position === starPos2 && p.coins >= starPrice) {
-        const cost = starPrice
-        p.coins -= cost; p.stars++
-        starPrice = 10  // 购买后恢复原价
-        updateStarPriceLabels()
-        updateInfoPanel(); updatePlayersPanel()
-        await showStarPopup(p, cost)
-        // 移动星星2到新位置
-        const candidates = []
-        for (let i = 0; i < BOARD_SIZE; i++) {
-          if (i !== starPos && i !== starPos2) candidates.push(i)
+      // 检查所有星星（支持不限数量）
+      const starsHere = getStarsAtPosition(p.position)
+      for (const star of starsHere) {
+        if (p.coins >= starPrice) {
+          const cost = starPrice
+          p.coins -= cost; p.stars++
+          starPrice = 10  // 购买后恢复原价
+          updateStarPriceLabels()
+          updateInfoPanel(); updatePlayersPanel()
+          await showStarPopup(p, cost)
+          if (star.type === 'permanent') {
+            moveStarToRandom(star)
+          } else {
+            removeStar(star)
+          }
+        } else {
+          await showNotEnoughCoins(p, starPrice)
+          break
         }
-        if (candidates.length > 0) {
-          showStar2(candidates[Math.floor(Math.random() * candidates.length)])
-        }
-      } else if (star2Active && p.position === starPos2 && p.coins < starPrice) {
-        await showNotEnoughCoins(p, starPrice)
       }
     }
   }
@@ -1436,36 +1399,25 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
       updateInfoPanel()
       playStep()  // 🔊 移动一步音效
       await sleep(350)
-      // 检查星星1
-      if (p.position === starPos && p.coins >= starPrice) {
-        const cost = starPrice
-        p.coins -= cost; p.stars++
-        starPrice = 10  // 购买后恢复原价
-        updateStarPriceLabels()
-        updateInfoPanel(); updatePlayersPanel()
-        await showStarPopup(p, cost)
-        moveStar()
-      } else if (p.position === starPos && p.coins < starPrice) {
-        await showNotEnoughCoins(p, starPrice)
-      }
-      // 检查星星2（最后三轮激活）
-      if (star2Active && p.position === starPos2 && p.coins >= starPrice) {
-        const cost = starPrice
-        p.coins -= cost; p.stars++
-        starPrice = 10  // 购买后恢复原价
-        updateStarPriceLabels()
-        updateInfoPanel(); updatePlayersPanel()
-        await showStarPopup(p, cost)
-        // 移动星星2到新位置
-        const candidates = []
-        for (let i = 0; i < BOARD_SIZE; i++) {
-          if (i !== starPos && i !== starPos2) candidates.push(i)
+      // 检查所有星星（支持不限数量）
+      const starsHere = getStarsAtPosition(p.position)
+      for (const star of starsHere) {
+        if (p.coins >= starPrice) {
+          const cost = starPrice
+          p.coins -= cost; p.stars++
+          starPrice = 10  // 购买后恢复原价
+          updateStarPriceLabels()
+          updateInfoPanel(); updatePlayersPanel()
+          await showStarPopup(p, cost)
+          if (star.type === 'permanent') {
+            moveStarToRandom(star)
+          } else {
+            removeStar(star)
+          }
+        } else {
+          await showNotEnoughCoins(p, starPrice)
+          break
         }
-        if (candidates.length > 0) {
-          showStar2(candidates[Math.floor(Math.random() * candidates.length)])
-        }
-      } else if (star2Active && p.position === starPos2 && p.coins < starPrice) {
-        await showNotEnoughCoins(p, starPrice)
       }
     }
   }
@@ -1513,8 +1465,14 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
 
     switch (sysEvent.id) {
       case 'sys_star_move': {
-        await showSystemEventResult(sysEvent, '星星飞走了...')
-        moveStar()
+        const permanentStars = stars.filter(s => s.type === 'permanent')
+        if (permanentStars.length > 0) {
+          const target = permanentStars[Math.floor(Math.random() * permanentStars.length)]
+          await showSystemEventResult(sysEvent, '星星飞走了...')
+          moveStarToRandom(target)
+        } else {
+          await showSystemEventResult(sysEvent, '场上没有永久星星可以移动！')
+        }
         break
       }
       case 'sys_forward_10': {
@@ -1549,17 +1507,15 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
         break
       }
       case 'sys_near_star': {
-        // 如果有两颗星，选择距离最近的一颗
-        let nearestStarPos = starPos
-        if (star2Active && starPos2 >= 0) {
-          const dist1 = ((starPos - p.position) + BOARD_SIZE) % BOARD_SIZE
-          const dist2 = ((starPos2 - p.position) + BOARD_SIZE) % BOARD_SIZE
-          nearestStarPos = dist1 <= dist2 ? starPos : starPos2
+        const nearest = findNearestStar(p.position)
+        if (nearest) {
+          const targetPos = (nearest.position - 2 + BOARD_SIZE) % BOARD_SIZE
+          await showSystemEventResult(sysEvent, `${p.name} 瞬移到星星前两格！`)
+          playTeleport()  // 🔊 传送音效
+          await teleportPlayer(pi, targetPos)
+        } else {
+          await showSystemEventResult(sysEvent, '场上没有星星！')
         }
-        const targetPos = (nearestStarPos - 2 + BOARD_SIZE) % BOARD_SIZE
-        await showSystemEventResult(sysEvent, `${p.name} 瞬移到星星前两格！`)
-        playTeleport()  // 🔊 传送音效
-        await teleportPlayer(pi, targetPos)
         break
       }
       case 'sys_random_pos': {
@@ -1584,15 +1540,15 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
         break
       }
       case 'sys_add_star': {
-        if (star2Active) {
-          await showSystemEventResult(sysEvent, '场上已经有两颗星星了！')
+        // 无限制添加一次性星星（收集后消失）
+        const occupied = new Set(stars.map(s => s.position))
+        const candidates = []
+        for (let i = 0; i < BOARD_SIZE; i++) { if (!occupied.has(i)) candidates.push(i) }
+        if (candidates.length > 0) {
+          createStar(candidates[Math.floor(Math.random() * candidates.length)], 'onetime')
+          await showSystemEventResult(sysEvent, `场上出现了一颗新星星！当前共 ${stars.length} 颗星星！`)
         } else {
-          const candidates = []
-          for (let i = 0; i < BOARD_SIZE; i++) { if (i !== starPos) candidates.push(i) }
-          if (candidates.length > 0) {
-            showStar2(candidates[Math.floor(Math.random() * candidates.length)])
-            await showSystemEventResult(sysEvent, '场上出现了第二颗星星！快去抢吧！')
-          }
+          await showSystemEventResult(sysEvent, '棋盘上没有空位放星星了！')
         }
         break
       }
@@ -1665,7 +1621,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
       const availSysEvents = SYSTEM_EVENTS.filter(e => {
         if (e.id === 'sys_star_price_up' && starPrice >= 20) return false
         if (e.id === 'sys_star_price_down' && starPrice <= 0) return false
-        if (e.id === 'sys_add_star' && star2Active) return false
+        // sys_add_star 不再有数量限制，始终可用
         return true
       })
       setHint('⚡ 系统事件触发！')
@@ -1808,11 +1764,7 @@ export function startGame(container, navigate, totalRounds, diceMode = 'auto', s
       await activateLastThreeRounds()
     }
 
-    // 恢复存档时：如果已在最后三轮且第二颗星已激活，恢复显示
-    if (savedState && star2Active && starPos2 >= 0) {
-      showStar2(starPos2)
-    }
-    // 恢复存档时：如果已在最后三轮，恢复BGM加速
+    // 恢复存档时：如果已在最后三轮，恢复BGM加速（星星已在初始化时从存档恢复）
     if (savedState && isLastThreeRounds) {
       speedUpBGM()
     }
