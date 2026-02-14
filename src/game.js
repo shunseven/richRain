@@ -158,11 +158,11 @@ function getTileSide(i) {
 // ========================================
 // 主游戏函数
 // ========================================
-export function startGame(container, navigate, totalRounds, diceMode = 'auto', savedState = null) {
-  const characters = store.getCharacters()
+export function startGame(container, navigate, totalRounds, diceMode = 'auto', savedState = null, selectedCharacters = null, selectedNpcs = null) {
+  const characters = selectedCharacters || store.getCharacters()
   if (characters.length === 0) { alert('请先添加至少一个角色！'); navigate('menu'); return }
 
-  const npcs = store.getNpcs()
+  const npcs = selectedNpcs || store.getNpcs()
   
   // 动态计算 NPC 格子：
   // 1. 找出所有已经被占用的格子（起点、事件、系统、金币）

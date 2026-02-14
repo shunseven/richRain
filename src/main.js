@@ -53,7 +53,7 @@ export function navigate(screen, params = {}) {
     case 'npc-event-editor': showNpcEventEditor(app, navigate); break
     case 'prize-editor': showPrizeEditor(app, navigate); break
     case 'round-setup': showRoundSetup(); break
-    case 'game': startGame(app, navigate, params.rounds, params.diceMode, params.savedState || null); break
+    case 'game': startGame(app, navigate, params.rounds, params.diceMode, params.savedState || null, params.characters || null, params.npcs || null); break
     case 'results': showResults(params); break
     default: showMenu()
   }
@@ -152,31 +152,90 @@ function showMenu() {
 
 // ===== 轮数设置 =====
 function showRoundSetup() {
+  const allCharacters = store.getCharacters()
+  const allNpcs = store.getNpcs()
+
   app.innerHTML = `
     <div class="round-setup">
       <div class="volume-control" id="btn-volume" title="开启/关闭声音">${bgVideo.muted ? '🔇' : '🔊'}</div>
-      <div class="round-setup-card">
-        <h2>🎲 设置游戏轮数</h2>
-        <input type="number" id="round-input" min="1" max="50" value="10" />
-        <div class="dice-mode-selector">
-          <div class="dice-mode-label">🎲 骰子模式</div>
-          <div class="dice-mode-options">
-            <button class="dice-mode-btn active" data-mode="auto" id="mode-auto">
-              <span class="mode-icon">🤖</span>
-              <span class="mode-text">自动摇骰子</span>
-              <span class="mode-desc">系统随机摇出点数</span>
-            </button>
-            <button class="dice-mode-btn" data-mode="external" id="mode-external">
-              <span class="mode-icon">🎯</span>
-              <span class="mode-text">场外摇骰子</span>
-              <span class="mode-desc">手动输入骰子点数</span>
-            </button>
+      <div class="round-setup-card" style="max-height: 90vh; overflow-y: auto;">
+        <h2>🎲 游戏设置</h2>
+        
+        <div class="setup-section">
+          <h3>1. 游戏轮数</h3>
+          <input type="number" id="round-input" min="1" max="50" value="10" />
+        </div>
+
+        <div class="setup-section">
+          <h3>2. 选择角色 (${allCharacters.length})</h3>
+          <div class="selection-list" id="character-list">
+            ${allCharacters.length === 0 ? '<div class="empty-tip">暂无角色，请去角色编辑添加</div>' : ''}
+            ${allCharacters.map(c => `
+              <label class="selection-item">
+                <input type="checkbox" name="character" value="${c.id}" checked>
+                <div class="selection-info">
+                  <img src="${c.avatar}" class="selection-avatar">
+                  <span class="selection-name" style="color: ${c.color}">${c.name}</span>
+                </div>
+              </label>
+            `).join('')}
           </div>
         </div>
+
+        <div class="setup-section">
+          <h3>3. 选择NPC (${allNpcs.length})</h3>
+          <div class="selection-list" id="npc-list">
+            ${allNpcs.length === 0 ? '<div class="empty-tip">暂无NPC</div>' : ''}
+            ${allNpcs.map(n => `
+              <label class="selection-item">
+                <input type="checkbox" name="npc" value="${n.id}" checked>
+                <div class="selection-info">
+                  <img src="${n.avatar}" class="selection-avatar">
+                  <span class="selection-name" style="color: ${n.color}">${n.name}</span>
+                </div>
+              </label>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="setup-section">
+          <h3>4. 骰子模式</h3>
+          <div class="dice-mode-selector">
+            <div class="dice-mode-options">
+              <button class="dice-mode-btn active" data-mode="auto" id="mode-auto">
+                <span class="mode-icon">🤖</span>
+                <span class="mode-text">自动</span>
+              </button>
+              <button class="dice-mode-btn" data-mode="external" id="mode-external">
+                <span class="mode-icon">🎯</span>
+                <span class="mode-text">场外</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <button class="btn-start" id="btn-start-game">开始游戏 🎉</button>
         <button class="btn-back" style="margin-top:15px" id="btn-back-menu">返回菜单</button>
       </div>
     </div>
+    <style>
+      .setup-section { margin-bottom: 20px; text-align: left; width: 100%; }
+      .setup-section h3 { font-size: 1.2em; color: #ffd700; margin-bottom: 10px; border-bottom: 2px solid rgba(255,215,0,0.3); padding-bottom: 5px; }
+      .selection-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; }
+      .selection-item { display: flex; align-items: center; gap: 8px; cursor: pointer; background: rgba(255,255,255,0.1); padding: 5px; border-radius: 8px; transition: all 0.2s; }
+      .selection-item:hover { background: rgba(255,255,255,0.2); }
+      .selection-item input[type="checkbox"] { width: 20px; height: 20px; accent-color: #ffd700; cursor: pointer; }
+      .selection-info { display: flex; align-items: center; gap: 8px; }
+      .selection-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; }
+      .selection-name { font-weight: bold; font-size: 0.9em; text-shadow: 1px 1px 2px black; }
+      .empty-tip { grid-column: 1 / -1; text-align: center; color: #ccc; font-style: italic; padding: 10px; }
+      
+      /* 调整原有样式适配 */
+      .round-setup-card { width: 90%; max-width: 600px; padding: 20px; }
+      .dice-mode-selector { margin-top: 0; padding: 0; background: none; }
+      .dice-mode-options { justify-content: flex-start; gap: 10px; }
+      .dice-mode-btn { width: auto; padding: 10px 20px; flex: 1; }
+    </style>
   `
 
   let diceMode = 'auto'
@@ -195,6 +254,19 @@ function showRoundSetup() {
       alert('请输入1-50之间的轮数')
       return
     }
+
+    // 获取选中的角色
+    const selectedCharIds = Array.from(document.querySelectorAll('input[name="character"]:checked')).map(cb => cb.value)
+    if (selectedCharIds.length === 0) {
+      alert('请至少选择一个角色！')
+      return
+    }
+    const selectedCharacters = allCharacters.filter(c => selectedCharIds.includes(c.id))
+
+    // 获取选中的NPC
+    const selectedNpcIds = Array.from(document.querySelectorAll('input[name="npc"]:checked')).map(cb => cb.value)
+    const selectedNpcs = allNpcs.filter(n => selectedNpcIds.includes(n.id))
+
     store.clearGameProgress()  // 开始新游戏时清除旧存档
     
     // 隐藏UI并显示加载中
@@ -264,7 +336,7 @@ function showRoundSetup() {
     bgVideo.play().catch(e => {
       console.warn('Video play failed:', e)
       // 如果视频播放失败，直接进入游戏
-      navigate('game', { rounds, diceMode })
+      navigate('game', { rounds, diceMode, characters: selectedCharacters, npcs: selectedNpcs })
     })
 
     const onVideoEnd = () => {
@@ -272,7 +344,7 @@ function showRoundSetup() {
       // 切换回循环播放模式，并进入游戏
       // navigate会负责调用updateBackground切换到 bg.mp4
       bgVideo.loop = true
-      navigate('game', { rounds, diceMode })
+      navigate('game', { rounds, diceMode, characters: selectedCharacters, npcs: selectedNpcs })
     }
     bgVideo.addEventListener('ended', onVideoEnd)
   })

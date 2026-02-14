@@ -19,7 +19,7 @@ const DEFAULT_NPCS = [
   { id: genId(), name: '秋平', avatar: '/roles/ping.png', color: '#e17055' },
   { id: genId(), name: '顺文', avatar: '/roles/shun.png', color: '#00b894' },
   { id: genId(), name: '淑娟', avatar: '/roles/juen.png', color: '#74b9ff' },
-
+  { id: genId(), name: '外祖母', avatar: '/roles/zm.png', color: '#85117eff' }, 
 ]
 
 const DEFAULT_MINIGAMES = [
