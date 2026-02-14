@@ -17,6 +17,8 @@ function updateBackground(screen) {
     desiredSrc = '/start-bg.mp4'
   } else if (screen === 'results') {
     desiredSrc = '/ed-bg.mp4'
+  } else if (screen === 'game') {
+    desiredSrc = '/bg.mp4'
   } else {
     bgVideo.style.display = 'none'
     bgVideo.pause()
@@ -267,6 +269,9 @@ function showRoundSetup() {
 
     const onVideoEnd = () => {
       bgVideo.removeEventListener('ended', onVideoEnd)
+      // 切换回循环播放模式，并进入游戏
+      // navigate会负责调用updateBackground切换到 bg.mp4
+      bgVideo.loop = true
       navigate('game', { rounds, diceMode })
     }
     bgVideo.addEventListener('ended', onVideoEnd)

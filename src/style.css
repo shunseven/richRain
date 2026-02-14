@@ -764,7 +764,7 @@ body {
   width: 100vw;
   height: 100vh;
   position: relative;
-  background: url('/bg.png') center/cover no-repeat, radial-gradient(ellipse at center, #2a0a0a 0%, #1a0505 50%, #0d0202 100%);
+  background: none;
   overflow: hidden;
 }
 
